@@ -1,0 +1,21 @@
+# Environment / Secrets
+.env
+.env.*
+
+# Spring Boot / Java
+backend/target/
+*.log
+*.class
+
+# Node / React
+frontend/node_modules/
+frontend/dist/
+
+# IDE Files
+.vscode/
+.idea/
+*.iml
+
+# OS Files
+.DS_Store
+Thumbs.db
