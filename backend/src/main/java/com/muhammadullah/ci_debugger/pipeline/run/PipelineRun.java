@@ -39,11 +39,13 @@ public class PipelineRun {
     @Column(name = "workflow_name", length = 300)
     private String workflowName;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
-    private String status;
+    private PipelineRunStatus status;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "conclusion", length = 30)
-    private String conclusion;
+    private PipelineRunConclusion conclusion;
 
     @Column(name = "head_sha", length = 64)
     private String headSha;
@@ -71,17 +73,13 @@ public class PipelineRun {
     protected PipelineRun() {
     }
 
-    public PipelineRun(String provider,
-                   String owner,
-                   String repo,
-                   Long providerRunId,
-                   String status) {
-    this.provider = provider;
-    this.owner = owner;
-    this.repo = repo;
-    this.providerRunId = providerRunId;
-    this.status = status;
-}
+    public PipelineRun(String provider, String owner, String repo, Long providerRunId, PipelineRunStatus status) {
+        this.provider = (provider == null || provider.isBlank()) ? "GITHUB" : provider;
+        this.owner = owner;
+        this.repo = repo;
+        this.providerRunId = providerRunId;
+        this.status = (status == null) ? PipelineRunStatus.UNKNOWN : status;
+    }
 
     public UUID getId() { return id; }
     public String getProvider() { return provider; }
@@ -89,8 +87,8 @@ public class PipelineRun {
     public String getRepo() { return repo; }
     public Long getProviderRunId() { return providerRunId; }
     public String getWorkflowName() { return workflowName; }
-    public String getStatus() { return status; }
-    public String getConclusion() { return conclusion; }
+    public PipelineRunStatus getStatus() { return status; }
+    public PipelineRunConclusion getConclusion() { return conclusion; }
     public String getHeadSha() { return headSha; }
     public String getBranch() { return branch; }
     public Instant getStartedAt() { return startedAt; }
@@ -99,29 +97,22 @@ public class PipelineRun {
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 
-    public void setProvider(String provider) { this.provider = provider; }
-    public void setOwner(String owner) { this.owner = owner; }
-    public void setRepo(String repo) { this.repo = repo; }
-    public void setProviderRunId(Long providerRunId) { this.providerRunId = providerRunId; }
+
     public void setWorkflowName(String workflowName) { this.workflowName = workflowName; }
-    public void setStatus(String status) { this.status = status; }
-    public void setConclusion(String conclusion) { this.conclusion = conclusion; }
     public void setHeadSha(String headSha) { this.headSha = headSha; }
     public void setBranch(String branch) { this.branch = branch; }
-    public void setStartedAt(Instant startedAt) { this.startedAt = startedAt; }
-    public void setCompletedAt(Instant completedAt) { this.completedAt = completedAt; }
-    public void setTotalDurationMs(Long totalDurationMs) { this.totalDurationMs = totalDurationMs; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+
+    // --- lifecycle methods ---
 
     public void markStarted(Instant startedAt) {
         this.startedAt = startedAt;
-        this.status = "IN_PROGRESS";
-    };
+        this.status = PipelineRunStatus.IN_PROGRESS;
+    }
 
-    public void markCompleted(String conclusion, Instant completedAt, long durationMs) {
-        this.conclusion = conclusion;
+    public void markCompleted(PipelineRunConclusion conclusion, Instant completedAt, long durationMs) {
+        this.conclusion = (conclusion == null) ? PipelineRunConclusion.UNKNOWN : conclusion;
         this.completedAt = completedAt;
         this.totalDurationMs = durationMs;
-        this.status = "COMPLETED";
-    };
+        this.status = PipelineRunStatus.COMPLETED;
+    }
 }
