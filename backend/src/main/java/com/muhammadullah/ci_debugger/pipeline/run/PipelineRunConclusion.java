@@ -8,6 +8,6 @@ public enum PipelineRunConclusion {
     TIMED_OUT,
     NEUTRAL,
     ACTION_REQUIRED,
-    STALE,      // optional but useful
+    STALE,      
     UNKNOWN
 }
