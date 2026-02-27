@@ -112,4 +112,16 @@ public class PipelineRun {
     public void setCompletedAt(Instant completedAt) { this.completedAt = completedAt; }
     public void setTotalDurationMs(Long totalDurationMs) { this.totalDurationMs = totalDurationMs; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+
+    public void markStarted(Instant startedAt) {
+        this.startedAt = startedAt;
+        this.status = "IN_PROGRESS";
+    };
+
+    public void markCompleted(String conclusion, Instant completedAt, long durationMs) {
+        this.conclusion = conclusion;
+        this.completedAt = completedAt;
+        this.totalDurationMs = durationMs;
+        this.status = "COMPLETED";
+    };
 }
