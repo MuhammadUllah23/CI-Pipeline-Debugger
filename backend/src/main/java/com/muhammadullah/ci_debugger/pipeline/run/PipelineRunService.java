@@ -41,18 +41,13 @@ public class PipelineRunService {
     ) {
         PipelineRun run = new PipelineRun(provider, owner, repo, req.getProviderRunId(), status);
 
-        if (req.getWorkflowName() != null) run.setWorkflowName(req.getWorkflowName());
-        if (req.getHeadSha() != null) run.setHeadSha(req.getHeadSha());
-        if (req.getBranch() != null) run.setBranch(req.getBranch());
+        applyMetadata(run, req);
 
         if (req.getStartedAt() != null) {
             run.markStarted(req.getStartedAt());
         }
 
-        if (req.getCompletedAt() != null  && run.getStartedAt() != null) {
-            long duration = coerceDuration(req.getTotalDurationMs(), run.getStartedAt(), req.getCompletedAt());
-            run.markCompleted(conclusion, req.getCompletedAt(), duration);
-        } 
+        applyCompletion(run, req, conclusion);
 
         return repository.save(run);
     }
@@ -63,23 +58,29 @@ public class PipelineRunService {
             PipelineRunStatus incomingStatus,
             PipelineRunConclusion incomingConclusion
     ) {
-
         existing.setStatus(incomingStatus);
-        if (req.getWorkflowName() != null && existing.getWorkflowName() == null) existing.setWorkflowName(req.getWorkflowName());
-        if (req.getHeadSha() != null && existing.getHeadSha() == null) existing.setHeadSha(req.getHeadSha());
-        if (req.getBranch() != null && existing.getBranch() == null) existing.setBranch(req.getBranch());
 
-       if (req.getStartedAt() != null && existing.getStartedAt() == null) {
-           existing.setStartedAt(req.getStartedAt());
+        if (req.getStartedAt() != null && existing.getStartedAt() == null) {
+            existing.setStartedAt(req.getStartedAt());
         }
 
-        if (req.getCompletedAt() != null) {
-            long duration = coerceDuration(req.getTotalDurationMs(), existing.getStartedAt(), req.getCompletedAt());
-
-            existing.markCompleted(incomingConclusion, req.getCompletedAt(), duration);
-        }
+        applyMetadata(existing, req);
+        applyCompletion(existing, req, incomingConclusion);
 
         return repository.save(existing);
+    }
+
+    private void applyMetadata(PipelineRun run, PipelineRunUpsertRequest req) {
+        if (req.getWorkflowName() != null && run.getWorkflowName() == null) run.setWorkflowName(req.getWorkflowName());
+        if (req.getHeadSha() != null && run.getHeadSha() == null) run.setHeadSha(req.getHeadSha());
+        if (req.getBranch() != null && run.getBranch() == null) run.setBranch(req.getBranch());
+    }
+
+    private void applyCompletion(PipelineRun run, PipelineRunUpsertRequest req, PipelineRunConclusion conclusion) {
+        if (req.getCompletedAt() != null) {
+            long duration = coerceDuration(req.getTotalDurationMs(), run.getStartedAt(), req.getCompletedAt());
+            run.markCompleted(conclusion, req.getCompletedAt(), duration);
+        }
     }
 
     private PipelineRunStatus coerceStatus(String raw) {
