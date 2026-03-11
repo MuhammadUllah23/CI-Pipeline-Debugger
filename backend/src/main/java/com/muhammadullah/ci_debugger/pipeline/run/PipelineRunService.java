@@ -64,6 +64,21 @@ public class PipelineRunService {
             PipelineRunConclusion incomingConclusion
     ) {
 
+        existing.setStatus(incomingStatus);
+        if (req.getWorkflowName() != null && existing.getWorkflowName() == null) existing.setWorkflowName(req.getWorkflowName());
+        if (req.getHeadSha() != null && existing.getHeadSha() == null) existing.setHeadSha(req.getHeadSha());
+        if (req.getBranch() != null && existing.getBranch() == null) existing.setBranch(req.getBranch());
+
+       if (req.getStartedAt() != null && existing.getStartedAt() == null) {
+           existing.setStartedAt(req.getStartedAt());
+        }
+
+        if (req.getCompletedAt() != null) {
+            long duration = coerceDuration(req.getTotalDurationMs(), existing.getStartedAt(), req.getCompletedAt());
+
+            existing.markCompleted(incomingConclusion, req.getCompletedAt(), duration);
+        }
+
         return repository.save(existing);
     }
 

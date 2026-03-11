@@ -101,6 +101,7 @@ public class PipelineRun {
     public void setWorkflowName(String workflowName) { this.workflowName = workflowName; }
     public void setHeadSha(String headSha) { this.headSha = headSha; }
     public void setBranch(String branch) { this.branch = branch; }
+    public void setStartedAt(Instant startedAt) { this.startedAt = startedAt; }
     public void setStatus(PipelineRunStatus status) {
         this.status = (status == null) ? PipelineRunStatus.UNKNOWN : status;
     }
