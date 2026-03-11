@@ -5,6 +5,7 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunUpsertRequest;
 
 @Service
@@ -16,7 +17,7 @@ public class PipelineRunService {
     }
 
     @Transactional
-    public PipelineRun upsert(PipelineRunUpsertRequest req) {
+    public PipelineRunResponse upsert(PipelineRunUpsertRequest req) {
         String provider = normalizeProvider(req.getProvider());
         String owner = req.getOwner().trim();
         String repo = req.getRepo().trim();
@@ -24,11 +25,13 @@ public class PipelineRunService {
         PipelineRunStatus status = coerceStatus(req.getStatus());
         PipelineRunConclusion conclusion = PipelineRunValueMapper.toConclusion(req.getConclusion());
 
-        return repository.findByProviderAndOwnerAndRepoAndProviderRunId(
+        PipelineRun run = repository.findByProviderAndOwnerAndRepoAndProviderRunId(
                         provider, owner, repo, req.getProviderRunId()
                 )
                 .map(existing -> applyUpdate(existing, req, status, conclusion))
                 .orElseGet(() -> createNew(req, provider, owner, repo, status, conclusion));
+
+        return PipelineRunResponse.from(run);
     }
 
     private PipelineRun createNew(
