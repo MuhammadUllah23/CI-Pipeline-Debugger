@@ -7,19 +7,23 @@ import java.time.Instant;
 
 public class PipelineRunUpsertRequest {
 
-    @NotBlank
+    @NotBlank 
+    @NotNull
     private String provider; 
 
     @NotBlank
+    @NotNull
     private String owner;
 
     @NotBlank
+    @NotNull
     private String repo;
 
     @NotNull
     private Long providerRunId;
 
     @NotBlank
+    @NotNull
     private String status;
 
     private String workflowName;
