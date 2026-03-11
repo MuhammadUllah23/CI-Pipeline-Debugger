@@ -5,6 +5,8 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.muhammadullah.ci_debugger.exception.ErrorCode;
+import com.muhammadullah.ci_debugger.exception.ServiceException;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunUpsertRequest;
 
@@ -25,13 +27,24 @@ public class PipelineRunService {
         PipelineRunStatus status = coerceStatus(req.getStatus());
         PipelineRunConclusion conclusion = PipelineRunValueMapper.toConclusion(req.getConclusion());
 
-        PipelineRun run = repository.findByProviderAndOwnerAndRepoAndProviderRunId(
-                        provider, owner, repo, req.getProviderRunId()
-                )
-                .map(existing -> applyUpdate(existing, req, status, conclusion))
-                .orElseGet(() -> createNew(req, provider, owner, repo, status, conclusion));
+        try {
+            PipelineRun run = repository.findByProviderAndOwnerAndRepoAndProviderRunId(
+                            provider, owner, repo, req.getProviderRunId()
+                    )
+                    .map(existing -> applyUpdate(existing, req, status, conclusion))
+                    .orElseGet(() -> createNew(req, provider, owner, repo, status, conclusion));
 
-        return PipelineRunResponse.from(run);
+            return PipelineRunResponse.from(run);
+        } catch (ServiceException e) {
+            throw e; 
+        } catch (Exception e) {
+            throw ServiceException.of(ErrorCode.DB_UPSERT_FAILED)
+                    .addDetail("provider", provider)
+                    .addDetail("owner", owner)
+                    .addDetail("repo", repo)
+                    .addDetail("providerRunId", req.getProviderRunId())
+                    .addDetail("cause", e.getMessage());
+        }
     }
 
     private PipelineRun createNew(
@@ -102,7 +115,10 @@ public class PipelineRunService {
     }
 
     private String normalizeProvider(String provider) {
-        if (provider == null || provider.isBlank()) return "GITHUB";
+        if (provider == null || provider.isBlank()) {
+            throw ServiceException.of(ErrorCode.PROVIDER_NOT_SUPPORTED)
+                    .addDetail("provider", provider);
+        }
         return provider.trim().toUpperCase();
     }
 
