@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS pipeline_run (
   id                uuid          PRIMARY KEY DEFAULT gen_random_uuid(),
  
   -- Provider identity
-  provider          varchar(20)   NOT NULL DEFAULT 'GITHUB',
+  provider          varchar(20)   NOT NULL,
   owner             varchar(200)  NOT NULL,
   repo              varchar(200)  NOT NULL,
   provider_run_id   varchar(100)  NOT NULL,  
