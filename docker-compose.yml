@@ -19,20 +19,5 @@ services:
       timeout: 5s
       retries: 5
 
-  flyway:
-    image: flyway/flyway:10
-    container_name: ci_debugger_flyway
-    depends_on:
-      postgres:
-        condition: service_healthy   
-    environment:
-      FLYWAY_URL: jdbc:postgresql://postgres:5432/ci_debugger
-      FLYWAY_USER: ${DB_USERNAME}
-      FLYWAY_PASSWORD: ${DB_PASSWORD}
-      FLYWAY_LOCATIONS: filesystem:/flyway/sql
-    volumes:
-      - ./db/migrations:/flyway/sql
-    command: migrate
-
 volumes:
   ci_debugger_pgdata:
