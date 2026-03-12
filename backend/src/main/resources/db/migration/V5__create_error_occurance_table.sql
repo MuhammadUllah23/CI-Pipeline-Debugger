@@ -1,12 +1,18 @@
-create table if not exists error_occurrence (
-  id uuid primary key default gen_random_uuid(),
+CREATE TABLE IF NOT EXISTS error_occurrence (
+  id               uuid          PRIMARY KEY DEFAULT gen_random_uuid(),
+ 
+  error_cluster_id uuid          NOT NULL REFERENCES error_cluster(id) ON DELETE CASCADE,
+  pipeline_run_id  uuid          NOT NULL REFERENCES pipeline_run(id) ON DELETE CASCADE,
+  pipeline_step_id uuid          REFERENCES pipeline_step(id) ON DELETE SET NULL,
+ 
 
-  error_cluster_id uuid not null references error_cluster(id) on delete cascade,
-  pipeline_run_id uuid not null references pipeline_run(id) on delete cascade,
-  pipeline_step_id uuid references pipeline_step(id) on delete set null,
-
-  line_no int,
-  snippet text,
-
-  created_at timestamptz not null default now()
+  line_number      int,
+  snippet          text,         
+ 
+  created_at       timestamptz   NOT NULL DEFAULT now()
 );
+ 
+CREATE INDEX idx_error_occurrence_cluster_id ON error_occurrence (error_cluster_id);
+CREATE INDEX idx_error_occurrence_run_id     ON error_occurrence (pipeline_run_id);
+CREATE INDEX idx_error_occurrence_step_id    ON error_occurrence (pipeline_step_id);
+ 
