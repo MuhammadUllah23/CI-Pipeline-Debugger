@@ -13,6 +13,26 @@ services:
       - "5432:5432"
     volumes:
       - ci_debugger_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ci_debugger"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  flyway:
+    image: flyway/flyway:10
+    container_name: ci_debugger_flyway
+    depends_on:
+      postgres:
+        condition: service_healthy   
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/ci_debugger
+      FLYWAY_USER: ${DB_USERNAME}
+      FLYWAY_PASSWORD: ${DB_PASSWORD}
+      FLYWAY_LOCATIONS: filesystem:/flyway/sql
+    volumes:
+      - ./db/migrations:/flyway/sql
+    command: migrate
 
 volumes:
   ci_debugger_pgdata:
