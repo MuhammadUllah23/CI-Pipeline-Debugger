@@ -26,10 +26,10 @@ public class PipelineRunDevController {
 
     @PostMapping("/seed")
     public PipelineRun seed() {
-        long providerRunId = System.currentTimeMillis(); 
+        String providerRunId = "123456789"; 
 
         PipelineRun run = new PipelineRun(
-                "GITHUB",
+                PipelineRunProvider.GITHUB,
                 "mhu-ventures",
                 "ci-pipeline-debugger",
                 providerRunId,

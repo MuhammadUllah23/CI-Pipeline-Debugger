@@ -2,6 +2,7 @@ package com.muhammadullah.ci_debugger.pipeline.run.dto;
 
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRun;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunConclusion;
+import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunProvider;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunStatus;
 
 import java.time.Instant;
@@ -10,10 +11,10 @@ import java.util.UUID;
 public class PipelineRunResponse {
 
     private UUID id;
-    private String provider;
+    private PipelineRunProvider provider;
     private String owner;
     private String repo;
-    private Long providerRunId;
+    private String providerRunId;
 
     private String workflowName;
     private PipelineRunStatus status;
@@ -50,10 +51,10 @@ public class PipelineRunResponse {
     }
 
     public UUID getId() { return id; }
-    public String getProvider() { return provider; }
+    public PipelineRunProvider getProvider() { return provider; }
     public String getOwner() { return owner; }
     public String getRepo() { return repo; }
-    public Long getProviderRunId() { return providerRunId; }
+    public String getProviderRunId() { return providerRunId; }
     public String getWorkflowName() { return workflowName; }
     public PipelineRunStatus getStatus() { return status; }
     public PipelineRunConclusion getConclusion() { return conclusion; }

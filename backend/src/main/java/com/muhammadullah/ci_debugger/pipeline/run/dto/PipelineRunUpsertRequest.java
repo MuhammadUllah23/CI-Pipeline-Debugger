@@ -1,29 +1,24 @@
 package com.muhammadullah.ci_debugger.pipeline.run.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 import java.time.Instant;
 
 public class PipelineRunUpsertRequest {
 
     @NotBlank 
-    @NotNull
     private String provider; 
 
     @NotBlank
-    @NotNull
     private String owner;
 
     @NotBlank
-    @NotNull
     private String repo;
 
-    @NotNull
-    private Long providerRunId;
+    @NotBlank
+    private String providerRunId;
 
     @NotBlank
-    @NotNull
     private String status;
 
     private String workflowName;
@@ -38,7 +33,7 @@ public class PipelineRunUpsertRequest {
     public String getProvider() { return provider; }
     public String getOwner() { return owner; }
     public String getRepo() { return repo; }
-    public Long getProviderRunId() { return providerRunId; }
+    public String getProviderRunId() { return providerRunId; }
     public String getStatus() { return status; }
     public String getWorkflowName() { return workflowName; }
     public String getConclusion() { return conclusion; }
@@ -51,7 +46,7 @@ public class PipelineRunUpsertRequest {
     public void setProvider(String provider) { this.provider = provider; }
     public void setOwner(String owner) { this.owner = owner; }
     public void setRepo(String repo) { this.repo = repo; }
-    public void setProviderRunId(Long providerRunId) { this.providerRunId = providerRunId; }
+    public void setProviderRunId(String providerRunId) { this.providerRunId = providerRunId; }
     public void setStatus(String status) { this.status = status; }
     public void setWorkflowName(String workflowName) { this.workflowName = workflowName; }
     public void setConclusion(String conclusion) { this.conclusion = conclusion; }

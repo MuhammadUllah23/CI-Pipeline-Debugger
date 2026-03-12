@@ -20,7 +20,7 @@ public class PipelineRunService {
 
     @Transactional
     public PipelineRunResponse upsert(PipelineRunUpsertRequest req) {
-        String provider = normalizeProvider(req.getProvider(), req.getProviderRunId());
+        PipelineRunProvider provider = normalizeProvider(req.getProvider(), req.getProviderRunId());
         String owner = req.getOwner().trim();
         String repo = req.getRepo().trim();
 
@@ -49,7 +49,7 @@ public class PipelineRunService {
 
     private PipelineRun createNew(
             PipelineRunUpsertRequest req,
-            String provider,
+            PipelineRunProvider provider,
             String owner,
             String repo,
             PipelineRunStatus status,
@@ -114,18 +114,15 @@ public class PipelineRunService {
         }
     }
 
-    private String normalizeProvider(String provider, Long providerRunId) {
-        String normalized = provider.trim().toUpperCase();
-
-    try {
-        PipelineRunProvider.valueOf(normalized);
-        return normalized;
-    } catch (IllegalArgumentException e) {
-        throw ServiceException.of(ErrorCode.PROVIDER_NOT_SUPPORTED)
-                .addDetail("provider", provider)
-                .addDetail("supportedProviders", PipelineRunProvider.values())
-                .addDetail("providerRunId", providerRunId);
-    }
+    private PipelineRunProvider normalizeProvider(String provider, String providerRunId) {
+        try {
+            return PipelineRunProvider.valueOf(provider.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw ServiceException.of(ErrorCode.PROVIDER_NOT_SUPPORTED)
+                    .addDetail("provider", provider)
+                    .addDetail("supportedProviders", PipelineRunProvider.values())
+                    .addDetail("providerRunId", providerRunId);
+        }
     }
 
     private long coerceDuration(Long provided, Instant startedAt, Instant completedAt) {

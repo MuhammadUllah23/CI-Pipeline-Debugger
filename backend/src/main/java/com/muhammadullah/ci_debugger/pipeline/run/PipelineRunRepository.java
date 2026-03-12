@@ -7,10 +7,10 @@ import java.util.UUID;
 public interface PipelineRunRepository extends JpaRepository<PipelineRun, UUID> {
 
     Optional<PipelineRun> findByProviderAndOwnerAndRepoAndProviderRunId(
-            String provider,
+            PipelineRunProvider provider,
             String owner,
             String repo,
-            Long providerRunId
+            String providerRunId
     );
 
 }

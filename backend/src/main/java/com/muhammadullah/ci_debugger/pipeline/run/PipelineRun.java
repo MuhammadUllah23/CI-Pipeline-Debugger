@@ -24,8 +24,9 @@ public class PipelineRun {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "provider", nullable = false, length = 20)
-    private String provider = "GITHUB";
+    private PipelineRunProvider provider;
 
     @Column(name = "owner", nullable = false, length = 200)
     private String owner;
@@ -33,8 +34,8 @@ public class PipelineRun {
     @Column(name = "repo", nullable = false, length = 200)
     private String repo;
 
-    @Column(name = "provider_run_id", nullable = false)
-    private Long providerRunId;
+    @Column(name = "provider_run_id", nullable = false, length = 100)
+    private String providerRunId;
 
     @Column(name = "workflow_name", length = 300)
     private String workflowName;
@@ -73,8 +74,8 @@ public class PipelineRun {
     protected PipelineRun() {
     }
 
-    public PipelineRun(String provider, String owner, String repo, Long providerRunId, PipelineRunStatus status) {
-        this.provider = (provider == null || provider.isBlank()) ? "GITHUB" : provider;
+    public PipelineRun(PipelineRunProvider provider, String owner, String repo, String providerRunId, PipelineRunStatus status) {
+        this.provider = provider;
         this.owner = owner;
         this.repo = repo;
         this.providerRunId = providerRunId;
@@ -82,10 +83,10 @@ public class PipelineRun {
     }
 
     public UUID getId() { return id; }
-    public String getProvider() { return provider; }
+    public PipelineRunProvider getProvider() { return provider; }
     public String getOwner() { return owner; }
     public String getRepo() { return repo; }
-    public Long getProviderRunId() { return providerRunId; }
+    public String getProviderRunId() { return providerRunId; }
     public String getWorkflowName() { return workflowName; }
     public PipelineRunStatus getStatus() { return status; }
     public PipelineRunConclusion getConclusion() { return conclusion; }
