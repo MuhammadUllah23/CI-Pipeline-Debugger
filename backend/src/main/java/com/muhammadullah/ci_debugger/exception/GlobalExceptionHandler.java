@@ -7,6 +7,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.HashMap;
@@ -57,5 +59,18 @@ public class GlobalExceptionHandler {
         body.put("message", ex.getMessage());
         body.put("path", request.getServletPath());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+    }
+
+    @ExceptionHandler(JsonProcessingException.class)
+    public ResponseEntity<Map<String, Object>> handleJsonProcessingException(
+            JsonProcessingException ex, HttpServletRequest request) {
+        Map<String, Object> body = new HashMap<>();
+
+        //**  Using generic message to avoid leaking details
+        body.put("status", 400);
+        body.put("error", "Bad Request");
+        body.put("message", "Malformed JSON payload");
+        body.put("path", request.getServletPath());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 }
