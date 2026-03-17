@@ -2,6 +2,8 @@ package com.muhammadullah.ci_debugger.pipeline.run;
 
 import java.time.Instant;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +14,9 @@ import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunUpsertRequest;
 
 @Service
 public class PipelineRunService {
+
+    private static final Logger log = LoggerFactory.getLogger(PipelineRunService.class);
+    
     private final PipelineRunRepository repository;
 
     public PipelineRunService(PipelineRunRepository repository) {
@@ -65,7 +70,10 @@ public class PipelineRunService {
 
         applyCompletion(run, req, conclusion);
 
-        return repository.save(run);
+        PipelineRun savedPipelineRun = repository.save(run);
+        log.info("Created pipeline run {} for {}/{} providerRunId={} status={}",
+                savedPipelineRun.getId(), owner, repo, req.getProviderRunId(), status);
+        return savedPipelineRun;
     }
 
     private PipelineRun applyUpdate(
@@ -83,7 +91,12 @@ public class PipelineRunService {
         applyMetadata(existing, req);
         applyCompletion(existing, req, incomingConclusion);
 
-        return repository.save(existing);
+        PipelineRun savedPipelineRun = repository.save(existing);
+        log.info("Updated pipeline run {} for {}/{} providerRunId={} status={}",
+                savedPipelineRun.getId(), existing.getOwner(), existing.getRepo(), existing.getProviderRunId(), incomingStatus);
+
+
+        return savedPipelineRun;
     }
 
     private void applyMetadata(PipelineRun run, PipelineRunUpsertRequest req) {
@@ -118,6 +131,7 @@ public class PipelineRunService {
         try {
             return PipelineRunProvider.valueOf(provider.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
+            log.warn("Unsupported provider '{}' for providerRunId={}", provider, providerRunId);
             throw ServiceException.of(ErrorCode.PROVIDER_NOT_SUPPORTED)
                     .addDetail("provider", provider)
                     .addDetail("supportedProviders", PipelineRunProvider.values())

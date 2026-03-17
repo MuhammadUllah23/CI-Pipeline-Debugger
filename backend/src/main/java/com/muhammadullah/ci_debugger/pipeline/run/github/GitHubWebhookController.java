@@ -41,7 +41,7 @@ public class GitHubWebhookController {
         this.pipelineRunService = pipelineRunService;
         this.processingJobService = processingJobService;
     }
-    
+
     @PostMapping
     public ResponseEntity<PipelineRunResponse> receive(
             @RequestBody byte[] rawBody,
@@ -61,8 +61,12 @@ public class GitHubWebhookController {
         PipelineRunUpsertRequest req = GitHubWebhookMapper.toUpsertRequest(payload);
         PipelineRunResponse response = pipelineRunService.upsert(req);
 
+        log.info("Upserted pipeline run {} for {}/{} (action={})",
+                response.getId(), response.getOwner(), response.getRepo(), payload.getAction());
+
         if (GitHubWebhookConstants.ACTION_COMPLETED.equals(payload.getAction())) {
             ProcessingJobResponse job = processingJobService.enqueue(response.getId(), ProcessingJobType.FETCH_STEPS);
+            log.info("Enqueued FETCH_STEPS job {} for pipeline run {}", job.getId(), response.getId());
         }
 
         return ResponseEntity.ok(response);
