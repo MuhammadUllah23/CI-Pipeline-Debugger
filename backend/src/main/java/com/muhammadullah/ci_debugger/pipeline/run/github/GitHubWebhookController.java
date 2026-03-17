@@ -1,6 +1,5 @@
 package com.muhammadullah.ci_debugger.pipeline.run.github;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunService;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunResponse;
@@ -36,7 +35,7 @@ public class GitHubWebhookController {
         this.objectMapper = objectMapper;
         this.pipelineRunService = pipelineRunService;
     }
-
+    
     @PostMapping
     public ResponseEntity<PipelineRunResponse> receive(
             @RequestBody byte[] rawBody,
