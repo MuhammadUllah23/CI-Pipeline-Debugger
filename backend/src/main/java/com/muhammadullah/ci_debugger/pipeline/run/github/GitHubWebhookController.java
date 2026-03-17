@@ -58,17 +58,17 @@ public class GitHubWebhookController {
         }
 
         GitHubWebhookPayload payload = objectMapper.readValue(rawBody, GitHubWebhookPayload.class);
-        PipelineRunUpsertRequest req = GitHubWebhookMapper.toUpsertRequest(payload);
-        PipelineRunResponse response = pipelineRunService.upsert(req);
+        PipelineRunUpsertRequest pipelineRunUpsertRequest = GitHubWebhookMapper.toUpsertRequest(payload);
+        PipelineRunResponse pipelineRunResponse = pipelineRunService.upsert(pipelineRunUpsertRequest);
 
         log.info("Upserted pipeline run {} for {}/{} (action={})",
-                response.getId(), response.getOwner(), response.getRepo(), payload.getAction());
+                pipelineRunResponse.getId(), pipelineRunResponse.getOwner(), pipelineRunResponse.getRepo(), payload.getAction());
 
         if (GitHubWebhookConstants.ACTION_COMPLETED.equals(payload.getAction())) {
-            ProcessingJobResponse job = processingJobService.enqueue(response.getId(), ProcessingJobType.FETCH_STEPS);
-            log.info("Enqueued FETCH_STEPS job {} for pipeline run {}", job.getId(), response.getId());
+            ProcessingJobResponse job = processingJobService.enqueue(pipelineRunResponse.getId(), ProcessingJobType.FETCH_STEPS);
+            log.info("Enqueued FETCH_STEPS job {} for pipeline run {}", job.getId(), pipelineRunResponse.getId());
         }
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(pipelineRunResponse);
     }
 }

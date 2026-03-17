@@ -31,7 +31,7 @@ public class ProcessingJobService {
 
     @Transactional
     public ProcessingJobResponse enqueue(UUID pipelineRunId, ProcessingJobType jobType) {
-        PipelineRun run = runRepository.findById(pipelineRunId)
+        PipelineRun pipelineRun = runRepository.findById(pipelineRunId)
                 .orElseThrow(() -> {
                     log.warn("Cannot enqueue {} job — pipeline run {} not found", jobType, pipelineRunId);
                     return ServiceException.of(ErrorCode.PIPELINE_RUN_NOT_FOUND)
@@ -39,9 +39,11 @@ public class ProcessingJobService {
                 });
 
         try {
-            ProcessingJob job = new ProcessingJob(run, jobType);
+            ProcessingJob job = new ProcessingJob(pipelineRun, jobType);
             ProcessingJobResponse processingJobResponse = ProcessingJobResponse.from(jobRepository.save(job));
+            
             log.info("Enqueued {} job {} for pipeline run {}", jobType, processingJobResponse.getId(), pipelineRunId);
+
             return processingJobResponse;
         } catch (ServiceException e) {
             throw e;
