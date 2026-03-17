@@ -1,0 +1,1 @@
+ALTER TABLE processing_job ADD COLUMN next_retry_at timestamptz;
