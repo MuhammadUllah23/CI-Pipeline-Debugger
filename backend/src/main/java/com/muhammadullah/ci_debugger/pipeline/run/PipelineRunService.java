@@ -23,6 +23,22 @@ public class PipelineRunService {
         this.repository = repository;
     }
 
+
+    /**
+     * Creates or updates a pipeline run identified by
+     * {@code (provider, owner, repo, providerRunId)}.
+     *
+     * <p>Safe to call multiple times for the same run — designed to handle
+     * successive GitHub webhooks ({@code requested}, {@code in_progress},
+     * {@code completed}) for the same workflow run.
+     *
+     * @param req the upsert request
+     * @return the created or updated run
+     * @throws ServiceException with {@link ErrorCode#PROVIDER_NOT_SUPPORTED} if
+     *                          the provider is unrecognised
+     * @throws ServiceException with {@link ErrorCode#DB_UPSERT_FAILED} if an
+     *                          unexpected database error occurs
+     */    
     @Transactional
     public PipelineRunResponse upsert(PipelineRunUpsertRequest req) {
         PipelineRunProvider provider = normalizeProvider(req.getProvider(), req.getProviderRunId());

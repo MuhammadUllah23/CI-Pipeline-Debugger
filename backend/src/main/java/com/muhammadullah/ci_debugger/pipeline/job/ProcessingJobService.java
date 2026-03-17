@@ -29,6 +29,20 @@ public class ProcessingJobService {
         this.runRepository = runRepository;
     }
 
+    /**
+     * Creates a new {@link ProcessingJob} of the given type for the specified pipeline run.
+     *
+     * <p>The job is created with {@link ProcessingJobStatus#PENDING} and is immediately
+     * eligible for pickup by the scheduler.
+     *
+     * @param pipelineRunId the ID of the pipeline run to enqueue the job for
+     * @param jobType       the type of job to enqueue
+     * @return the created job
+     * @throws ServiceException with {@link ErrorCode#PIPELINE_RUN_NOT_FOUND} if no
+     *                          run exists for the given ID
+     * @throws ServiceException with {@link ErrorCode#DB_UPSERT_FAILED} if an
+     *                          unexpected database error occurs
+     */
     @Transactional
     public ProcessingJobResponse enqueue(UUID pipelineRunId, ProcessingJobType jobType) {
         PipelineRun pipelineRun = runRepository.findById(pipelineRunId)

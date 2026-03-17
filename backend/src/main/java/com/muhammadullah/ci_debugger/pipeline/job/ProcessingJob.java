@@ -75,16 +75,39 @@ public class ProcessingJob {
 
     // ── lifecycle methods ──────────────────────────────────────────────────
 
+    /**
+     * Transitions the job to {@link ProcessingJobStatus#IN_PROGRESS} and
+     * records the start time. Should be called by the scheduler immediately
+     * before handing the job off to a handler.
+     */
     public void markInProgress() {
         this.status = ProcessingJobStatus.IN_PROGRESS;
         this.startedAt = Instant.now();
     }
 
+    /**
+     * Transitions the job to {@link ProcessingJobStatus#COMPLETED} and
+     * records the completion time.
+     */
     public void markCompleted() {
         this.status = ProcessingJobStatus.COMPLETED;
         this.completedAt = Instant.now();
     }
 
+    /**
+     * Records a failed attempt and either re-queues the job for retry or
+     * transitions it to {@link ProcessingJobStatus#FAILED} if all attempts
+     * are exhausted.
+     *
+     * <p>If {@code attempts < maxAttempts} after incrementing, the job returns
+     * to {@link ProcessingJobStatus#PENDING} with {@code nextRetryAt} set to
+     * the provided retry time. Otherwise the job is permanently marked as
+     * {@link ProcessingJobStatus#FAILED}.
+     *
+     * @param error        the error message to record in {@code lastError}
+     * @param nextRetryAt  the earliest time the job should be retried;
+     *                     ignored if all attempts are exhausted
+     */
     public void markFailed(String error, Instant nextRetryAt) {
         this.attempts++;
         this.lastError = error;

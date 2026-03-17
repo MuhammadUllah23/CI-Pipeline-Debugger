@@ -21,6 +21,21 @@ public class HmacVerifier {
         this.secret = secret;
     }
 
+    /**
+     * Verifies that a GitHub webhook payload has not been tampered with by
+     * validating its HMAC-SHA256 signature against the configured webhook secret.
+     *
+     * GitHub computes the signature by applying HMAC-SHA256 to the raw request
+     * body using the shared secret, then prefixes the result with {@code sha256=}.
+     * This method recomputes the same signature locally and compares the two using
+     * a constant-time equality check to prevent timing attacks.
+     *
+     * @param payload         the raw request body bytes exactly as received
+     * @param signatureHeader the value of the {@code X-Hub-Signature-256} header,
+     *                        expected in the format {@code sha256=<hex>}
+     * @return {@code true} if the signature is valid, {@code false} if the header
+     *         is missing, malformed, or does not match the computed signature
+     */
     public boolean verify(byte[] payload, String signatureHeader) {
         if (signatureHeader == null || !signatureHeader.startsWith(SIGNATURE_PREFIX)) {
             return false;
