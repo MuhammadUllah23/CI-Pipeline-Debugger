@@ -1,6 +1,9 @@
 package com.muhammadullah.ci_debugger.pipeline.run.github;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.muhammadullah.ci_debugger.pipeline.job.ProcessingJobService;
+import com.muhammadullah.ci_debugger.pipeline.job.ProcessingJobType;
+import com.muhammadullah.ci_debugger.pipeline.job.dto.ProcessingJobResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunService;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunUpsertRequest;
@@ -25,15 +28,18 @@ public class GitHubWebhookController {
     private final HmacVerifier hmacVerifier;
     private final ObjectMapper objectMapper;
     private final PipelineRunService pipelineRunService;
+    private final ProcessingJobService processingJobService;
 
     public GitHubWebhookController(
             HmacVerifier hmacVerifier,
             ObjectMapper objectMapper,
-            PipelineRunService pipelineRunService
+            PipelineRunService pipelineRunService,
+            ProcessingJobService processingJobService
     ) {
         this.hmacVerifier = hmacVerifier;
         this.objectMapper = objectMapper;
         this.pipelineRunService = pipelineRunService;
+        this.processingJobService = processingJobService;
     }
     
     @PostMapping
@@ -56,8 +62,7 @@ public class GitHubWebhookController {
         PipelineRunResponse response = pipelineRunService.upsert(req);
 
         if (GitHubWebhookConstants.ACTION_COMPLETED.equals(payload.getAction())) {
-            // TODO: enqueue FETCH_STEPS job for providerRunId = response.getProviderRunId()
-            log.debug("Pipeline run {} completed — step fetch job not yet implemented", response.getProviderRunId());
+            ProcessingJobResponse job = processingJobService.enqueue(response.getId(), ProcessingJobType.FETCH_STEPS);
         }
 
         return ResponseEntity.ok(response);
