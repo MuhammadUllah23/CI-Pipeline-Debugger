@@ -1,0 +1,27 @@
+{"properties": [
+  {
+    "name": "github.api.connect-timeout-ms",
+    "type": "java.lang.Long",
+    "description": "Maximum time in milliseconds to wait when establishing a connection to the GitHub API before timing out."
+  },
+  {
+    "name": "github.webhook.secret",
+    "type": "java.lang.String",
+    "description": "Shared secret used to verify the HMAC-SHA256 signature on incoming GitHub webhook payloads."
+  },
+  {
+    "name": "github.api.token",
+    "type": "java.lang.String",
+    "description": "Personal access token used to authenticate outbound requests to the GitHub REST API."
+  },
+  {
+    "name": "github.api.read-timeout-ms",
+    "type": "java.lang.Long",
+    "description": "Maximum time in milliseconds to wait for a response from the GitHub API after a connection has been established."
+  },
+  {
+    "name": "github.api.base-url",
+    "type": "java.lang.String",
+    "description": "Base URL for the GitHub REST API. Defaults to https://api.github.com."
+  }
+]}
