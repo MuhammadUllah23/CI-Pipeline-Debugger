@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -32,4 +33,18 @@ public interface ProcessingJobRepository extends JpaRepository<ProcessingJob, UU
             """)
     List<ProcessingJob> findEligibleJobs(@Param("now") Instant now);
 
+
+    /**
+     * Finds an active (PENDING or IN_PROGRESS) job for the given run and type.
+     */
+    @Query("""
+            SELECT job FROM ProcessingJob job
+            WHERE job.pipelineRun.id = :pipelineRunId
+            AND job.jobType = :jobType
+            AND job.status IN ('PENDING', 'IN_PROGRESS')
+            """)
+    Optional<ProcessingJob> findActiveJobByRunIdAndType(
+            @Param("pipelineRunId") UUID pipelineRunId,
+            @Param("jobType") ProcessingJobType jobType
+    );
 }

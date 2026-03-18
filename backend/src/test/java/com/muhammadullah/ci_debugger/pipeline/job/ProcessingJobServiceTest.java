@@ -112,4 +112,20 @@ class ProcessingJobServiceTest {
                     assertThat(se.getErrorCode()).isEqualTo(ErrorCode.DB_UPSERT_CONFLICT);
                 });
     }
+
+    @Test
+    void enqueue_activeJobAlreadyExists_returnsExistingJob() {
+        ProcessingJob existingJob = new ProcessingJob(pipelineRun, ProcessingJobType.FETCH_STEPS);
+
+        when(runRepository.findById(pipelineRunId)).thenReturn(Optional.of(pipelineRun));
+        when(jobRepository.findActiveJobByRunIdAndType(pipelineRunId, ProcessingJobType.FETCH_STEPS))
+                .thenReturn(Optional.of(existingJob));
+
+        ProcessingJobResponse response = processingJobService.enqueue(pipelineRunId, ProcessingJobType.FETCH_STEPS);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getJobType()).isEqualTo(ProcessingJobType.FETCH_STEPS);
+        assertThat(response.getStatus()).isEqualTo(ProcessingJobStatus.PENDING);
+        verify(jobRepository, never()).save(any());
+    }
 }

@@ -8,9 +8,11 @@ import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -43,29 +45,35 @@ public class ProcessingJobService {
      * @throws ServiceException with {@link ErrorCode#DB_UPSERT_FAILED} if an
      *                          unexpected database error occurs
      */
-    @Transactional
-    public ProcessingJobResponse enqueue(UUID pipelineRunId, ProcessingJobType jobType) {
-        PipelineRun pipelineRun = runRepository.findById(pipelineRunId)
-                .orElseThrow(() -> {
-                    log.warn("Cannot enqueue {} job — pipeline run {} not found", jobType, pipelineRunId);
-                    return ServiceException.of(ErrorCode.PIPELINE_RUN_NOT_FOUND)
-                            .addDetail("pipelineRunId", pipelineRunId);
-                });
+@Transactional
+public ProcessingJobResponse enqueue(UUID pipelineRunId, ProcessingJobType jobType) {
+    PipelineRun run = runRepository.findById(pipelineRunId)
+            .orElseThrow(() -> {
+                log.warn("Cannot enqueue {} job — pipeline run {} not found", jobType, pipelineRunId);
+                return ServiceException.of(ErrorCode.PIPELINE_RUN_NOT_FOUND)
+                        .addDetail("pipelineRunId", pipelineRunId);
+            });
 
-        try {
-            ProcessingJob job = new ProcessingJob(pipelineRun, jobType);
-            ProcessingJobResponse processingJobResponse = ProcessingJobResponse.from(jobRepository.save(job));
-            
-            log.info("Enqueued {} job {} for pipeline run {}", jobType, processingJobResponse.getId(), pipelineRunId);
-
-            return processingJobResponse;
-        } catch (ServiceException e) {
-            throw e;
-        } catch (Exception e) {
-            throw ServiceException.of(ErrorCode.DB_UPSERT_FAILED)
-                    .addDetail("pipelineRunId", pipelineRunId)
-                    .addDetail("jobType", jobType)
-                    .addDetail("cause", e.getMessage());
-        }
+    Optional<ProcessingJob> existingJob = jobRepository.findActiveJobByRunIdAndType(pipelineRunId, jobType);
+    if (existingJob.isPresent()) {
+        log.info("Active {} job already exists for pipeline run {} — skipping duplicate enqueue",
+                jobType, pipelineRunId);
+        return ProcessingJobResponse.from(existingJob.get());
     }
+
+    try {
+        ProcessingJob job = new ProcessingJob(run, jobType);
+        ProcessingJobResponse response = ProcessingJobResponse.from(jobRepository.save(job));
+        log.info("Enqueued {} job {} for pipeline run {}", jobType, response.getId(), pipelineRunId);
+        return response;
+    } catch (ServiceException e) {
+        throw e;
+    } catch (Exception e) {
+        log.error("Failed to enqueue {} job for pipeline run {} — {}", jobType, pipelineRunId, e.getMessage());
+        throw ServiceException.of(ErrorCode.DB_UPSERT_FAILED)
+                .addDetail("pipelineRunId", pipelineRunId)
+                .addDetail("jobType", jobType)
+                .addDetail("cause", e.getMessage());
+    }
+}
 }
