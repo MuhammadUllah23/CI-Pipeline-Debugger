@@ -23,5 +23,10 @@
     "name": "github.api.base-url",
     "type": "java.lang.String",
     "description": "Base URL for the GitHub REST API. Defaults to https://api.github.com."
+  },
+  {
+    "name": "pipeline.job.scheduler.interval-ms",
+    "type": "java.lang.Long",
+    "description": "How often in milliseconds the job scheduler polls for eligible PENDING jobs."
   }
 ]}
