@@ -28,5 +28,10 @@
     "name": "pipeline.job.scheduler.interval-ms",
     "type": "java.lang.Long",
     "description": "How often in milliseconds the job scheduler polls for eligible PENDING jobs."
+  },
+  {
+    "name": "scheduling.enabled",
+    "type": "java.lang.String",
+    "description": "Disable scheduling for tests"
   }
 ]}
