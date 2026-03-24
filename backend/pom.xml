@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.11</version>
+		<version>3.5.12</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.muhammadullah</groupId>
@@ -102,15 +102,21 @@
 				</configuration>
 			</plugin>
 			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>properties</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
-					<excludes>
-						<exclude>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</exclude>
-					</excludes>
+					<argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
 				</configuration>
 			</plugin>
 		</plugins>
