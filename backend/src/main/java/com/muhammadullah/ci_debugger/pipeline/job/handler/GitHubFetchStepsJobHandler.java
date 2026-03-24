@@ -30,7 +30,7 @@ public class GitHubFetchStepsJobHandler implements JobHandler {
 
     @Override
     public ProcessingJobType getJobType() {
-        return ProcessingJobType.FETCH_STEPS;
+        return ProcessingJobType.GITHUB_FETCH_STEPS;
     }
 
     @Override

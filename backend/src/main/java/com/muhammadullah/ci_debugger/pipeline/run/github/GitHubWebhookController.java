@@ -65,7 +65,7 @@ public class GitHubWebhookController {
                 pipelineRunResponse.getId(), pipelineRunResponse.getOwner(), pipelineRunResponse.getRepo(), payload.getAction());
 
         if (GitHubWebhookConstants.ACTION_COMPLETED.equals(payload.getAction())) {
-            ProcessingJobResponse job = processingJobService.enqueue(pipelineRunResponse.getId(), ProcessingJobType.FETCH_STEPS);
+            ProcessingJobResponse job = processingJobService.enqueue(pipelineRunResponse.getId(), ProcessingJobType.GITHUB_FETCH_STEPS);
             log.info("Enqueued FETCH_STEPS job {} for pipeline run {}", job.getId(), pipelineRunResponse.getId());
         }
 

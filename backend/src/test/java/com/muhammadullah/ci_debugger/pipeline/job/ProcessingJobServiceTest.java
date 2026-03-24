@@ -53,15 +53,15 @@ class ProcessingJobServiceTest {
 
     @Test
     void enqueue_happyPath_returnsResponse() {
-        ProcessingJob savedJob = new ProcessingJob(pipelineRun, ProcessingJobType.FETCH_STEPS);
+        ProcessingJob savedJob = new ProcessingJob(pipelineRun, ProcessingJobType.GITHUB_FETCH_STEPS);
 
         when(runRepository.findById(pipelineRunId)).thenReturn(Optional.of(pipelineRun));
         when(jobRepository.save(any(ProcessingJob.class))).thenReturn(savedJob);
 
-        ProcessingJobResponse response = processingJobService.enqueue(pipelineRunId, ProcessingJobType.FETCH_STEPS);
+        ProcessingJobResponse response = processingJobService.enqueue(pipelineRunId, ProcessingJobType.GITHUB_FETCH_STEPS);
 
         assertThat(response).isNotNull();
-        assertThat(response.getJobType()).isEqualTo(ProcessingJobType.FETCH_STEPS);
+        assertThat(response.getJobType()).isEqualTo(ProcessingJobType.GITHUB_FETCH_STEPS);
         assertThat(response.getStatus()).isEqualTo(ProcessingJobStatus.PENDING);
         verify(jobRepository).save(any(ProcessingJob.class));
     }
@@ -70,7 +70,7 @@ class ProcessingJobServiceTest {
     void enqueue_runNotFound_throwsPipelineRunNotFound() {
         when(runRepository.findById(pipelineRunId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> processingJobService.enqueue(pipelineRunId, ProcessingJobType.FETCH_STEPS))
+        assertThatThrownBy(() -> processingJobService.enqueue(pipelineRunId, ProcessingJobType.GITHUB_FETCH_STEPS))
                 .isInstanceOf(ServiceException.class)
                 .satisfies(ex -> {
                     ServiceException se = (ServiceException) ex;
@@ -86,7 +86,7 @@ class ProcessingJobServiceTest {
         when(runRepository.findById(pipelineRunId)).thenReturn(Optional.of(pipelineRun));
         when(jobRepository.save(any(ProcessingJob.class))).thenThrow(new RuntimeException("connection timeout"));
 
-        assertThatThrownBy(() -> processingJobService.enqueue(pipelineRunId, ProcessingJobType.FETCH_STEPS))
+        assertThatThrownBy(() -> processingJobService.enqueue(pipelineRunId, ProcessingJobType.GITHUB_FETCH_STEPS))
                 .isInstanceOf(ServiceException.class)
                 .satisfies(ex -> {
                     ServiceException se = (ServiceException) ex;
@@ -105,7 +105,7 @@ class ProcessingJobServiceTest {
         when(runRepository.findById(pipelineRunId)).thenReturn(Optional.of(pipelineRun));
         when(jobRepository.save(any(ProcessingJob.class))).thenThrow(original);
 
-        assertThatThrownBy(() -> processingJobService.enqueue(pipelineRunId, ProcessingJobType.FETCH_STEPS))
+        assertThatThrownBy(() -> processingJobService.enqueue(pipelineRunId, ProcessingJobType.GITHUB_FETCH_STEPS))
                 .isInstanceOf(ServiceException.class)
                 .satisfies(ex -> {
                     ServiceException se = (ServiceException) ex;
@@ -115,16 +115,16 @@ class ProcessingJobServiceTest {
 
     @Test
     void enqueue_activeJobAlreadyExists_returnsExistingJob() {
-        ProcessingJob existingJob = new ProcessingJob(pipelineRun, ProcessingJobType.FETCH_STEPS);
+        ProcessingJob existingJob = new ProcessingJob(pipelineRun, ProcessingJobType.GITHUB_FETCH_STEPS);
 
         when(runRepository.findById(pipelineRunId)).thenReturn(Optional.of(pipelineRun));
-        when(jobRepository.findActiveJobByRunIdAndType(pipelineRunId, ProcessingJobType.FETCH_STEPS))
+        when(jobRepository.findActiveJobByRunIdAndType(pipelineRunId, ProcessingJobType.GITHUB_FETCH_STEPS))
                 .thenReturn(Optional.of(existingJob));
 
-        ProcessingJobResponse response = processingJobService.enqueue(pipelineRunId, ProcessingJobType.FETCH_STEPS);
+        ProcessingJobResponse response = processingJobService.enqueue(pipelineRunId, ProcessingJobType.GITHUB_FETCH_STEPS);
 
         assertThat(response).isNotNull();
-        assertThat(response.getJobType()).isEqualTo(ProcessingJobType.FETCH_STEPS);
+        assertThat(response.getJobType()).isEqualTo(ProcessingJobType.GITHUB_FETCH_STEPS);
         assertThat(response.getStatus()).isEqualTo(ProcessingJobStatus.PENDING);
         verify(jobRepository, never()).save(any());
     }
