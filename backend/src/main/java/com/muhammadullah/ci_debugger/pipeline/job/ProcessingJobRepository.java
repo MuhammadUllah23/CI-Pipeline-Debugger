@@ -25,13 +25,14 @@ public interface ProcessingJobRepository extends JpaRepository<ProcessingJob, UU
      * @param now the current timestamp to evaluate scheduling and retry windows against
      * @return a list of eligible jobs, or an empty list if none are ready
      */
-    @Query("""
-            SELECT j FROM ProcessingJob j
-            WHERE j.status IN ('PENDING')
-            AND j.scheduledAt <= :now
-            AND (j.nextRetryAt IS NULL OR j.nextRetryAt <= :now)
-            """)
-    List<ProcessingJob> findEligibleJobs(@Param("now") Instant now);
+        @Query("""
+                SELECT job FROM ProcessingJob job
+                JOIN FETCH job.pipelineRun
+                WHERE job.status = 'PENDING'
+                AND job.scheduledAt <= :now
+                AND (job.nextRetryAt IS NULL OR job.nextRetryAt <= :now)
+                """)
+        List<ProcessingJob> findEligibleJobs(@Param("now") Instant now);
 
 
     /**
