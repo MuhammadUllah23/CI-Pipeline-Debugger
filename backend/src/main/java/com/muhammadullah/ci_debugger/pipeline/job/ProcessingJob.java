@@ -120,6 +120,19 @@ public class ProcessingJob {
         }
     }
 
+    /**
+     * Permanently fails the job immediately regardless of remaining attempts.
+     * Used for unrecoverable errors where retrying would never succeed —
+     * for example when no handler is registered for the job type.
+     *
+     * @param error the error message to record in {@code lastError}
+     */
+    public void markFailedImmediately(String error) {
+        this.attempts = this.maxAttempts;
+        this.lastError = error;
+        this.status = ProcessingJobStatus.FAILED;
+    }
+
     public UUID getId() { return id; }
     public PipelineRun getPipelineRun() { return pipelineRun; }
     public ProcessingJobType getJobType() { return jobType; }
