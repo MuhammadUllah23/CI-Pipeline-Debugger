@@ -114,11 +114,11 @@ class ProcessingJobServiceTest {
     }
 
     @Test
-    void enqueue_activeJobAlreadyExists_returnsExistingJob() {
+    void enqueue_activeJobAlreadyExists_returnsExistingJobWithoutSaving() {
         ProcessingJob existingJob = new ProcessingJob(pipelineRun, ProcessingJobType.GITHUB_FETCH_STEPS);
 
         when(runRepository.findById(pipelineRunId)).thenReturn(Optional.of(pipelineRun));
-        when(jobRepository.findActiveJobByRunIdAndType(pipelineRunId, ProcessingJobType.GITHUB_FETCH_STEPS))
+        when(jobRepository.findNonFailedJobByRunIdAndType(pipelineRunId, ProcessingJobType.GITHUB_FETCH_STEPS))
                 .thenReturn(Optional.of(existingJob));
 
         ProcessingJobResponse response = processingJobService.enqueue(pipelineRunId, ProcessingJobType.GITHUB_FETCH_STEPS);
@@ -126,6 +126,24 @@ class ProcessingJobServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.getJobType()).isEqualTo(ProcessingJobType.GITHUB_FETCH_STEPS);
         assertThat(response.getStatus()).isEqualTo(ProcessingJobStatus.PENDING);
+        verify(jobRepository, never()).save(any());
+    }
+
+    @Test
+    void enqueue_completedJobAlreadyExists_returnsExistingJobWithoutSaving() {
+        ProcessingJob completedJob = new ProcessingJob(pipelineRun, ProcessingJobType.GITHUB_FETCH_STEPS);
+        completedJob.markInProgress();
+        completedJob.markCompleted();
+
+        when(runRepository.findById(pipelineRunId)).thenReturn(Optional.of(pipelineRun));
+        when(jobRepository.findNonFailedJobByRunIdAndType(pipelineRunId, ProcessingJobType.GITHUB_FETCH_STEPS))
+                .thenReturn(Optional.of(completedJob));
+
+        ProcessingJobResponse response = processingJobService.enqueue(pipelineRunId, ProcessingJobType.GITHUB_FETCH_STEPS);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getJobType()).isEqualTo(ProcessingJobType.GITHUB_FETCH_STEPS);
+        assertThat(response.getStatus()).isEqualTo(ProcessingJobStatus.COMPLETED);
         verify(jobRepository, never()).save(any());
     }
 }

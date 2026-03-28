@@ -53,7 +53,7 @@ public ProcessingJobResponse enqueue(UUID pipelineRunId, ProcessingJobType jobTy
                         .addDetail("pipelineRunId", pipelineRunId);
             });
 
-    Optional<ProcessingJob> existingJob = jobRepository.findActiveJobByRunIdAndType(pipelineRunId, jobType);
+    Optional<ProcessingJob> existingJob = jobRepository.findNonFailedJobByRunIdAndType(pipelineRunId, jobType);
     if (existingJob.isPresent()) {
         log.info("Active {} job already exists for pipeline run {} — skipping duplicate enqueue",
                 jobType, pipelineRunId);
