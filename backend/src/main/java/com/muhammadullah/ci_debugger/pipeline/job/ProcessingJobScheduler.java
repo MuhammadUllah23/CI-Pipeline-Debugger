@@ -52,6 +52,7 @@ public class ProcessingJobScheduler {
                 job.getJobType(), job.getId(), job.getPipelineRun().getId());
 
         job.markInProgress();
+        job.incrementAttempts();
         jobRepository.save(job);
         progressNotifier.onJobStarted(job.getPipelineRun().getId(), job.getJobType());
 
@@ -77,17 +78,17 @@ public class ProcessingJobScheduler {
     }
 
     private void handleUnknownJobType(ProcessingJob job) {
+        String error = "No handler registered for job type: " + job.getJobType();
         log.error("No handler registered for job type {} — failing immediately without retry",
                 job.getJobType());
-        job.markFailedImmediately("No handler registered for job type: " + job.getJobType());
+        job.markFailedImmediately(error);
         jobRepository.save(job);
-        progressNotifier.onJobFailed(job.getPipelineRun().getId(), job.getJobType(),
-                "No handler registered", false);
+        progressNotifier.onJobFailed(job.getPipelineRun().getId(), job.getJobType(), error, false);
     }
 
     private void handleFailure(ProcessingJob job, Exception e) {
         String error = e.getMessage();
-        boolean willRetry = job.getAttempts() + 1 < job.getMaxAttempts();
+        boolean willRetry = job.getAttempts() < job.getMaxAttempts();
         Instant nextRetryAt = computeNextRetryAt(job.getAttempts());
 
         log.warn("Failed {} job {} for pipeline run {} — attempt {}/{} willRetry={} error={}",

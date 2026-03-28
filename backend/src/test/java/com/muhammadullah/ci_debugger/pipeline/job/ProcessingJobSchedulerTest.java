@@ -69,7 +69,7 @@ class ProcessingJobSchedulerTest {
     }
 
     @Test
-    void processPendingJobs_happyPath_jobMarkedCompleted() {
+    void processPendingJobs_happyPath_jobMarkedCompletedWithOneAttempt() {
         ProcessingJob job = buildJob(ProcessingJobType.GITHUB_FETCH_STEPS);
 
         when(jobRepository.findEligibleJobs(any(Instant.class))).thenReturn(List.of(job));
@@ -78,6 +78,7 @@ class ProcessingJobSchedulerTest {
         scheduler.processPendingJobs();
 
         assertThat(job.getStatus()).isEqualTo(ProcessingJobStatus.COMPLETED);
+        assertThat(job.getAttempts()).isEqualTo(1);
         verify(gitHubFetchStepsHandler).handle(job);
         verify(progressNotifier).onJobStarted(pipelineRun.getId(), ProcessingJobType.GITHUB_FETCH_STEPS);
         verify(progressNotifier).onJobCompleted(pipelineRun.getId(), ProcessingJobType.GITHUB_FETCH_STEPS);
@@ -105,8 +106,10 @@ class ProcessingJobSchedulerTest {
     void processPendingJobs_allAttemptsExhausted_jobMarkedFailed() {
         ProcessingJob job = buildJob(ProcessingJobType.GITHUB_FETCH_STEPS);
 
-        // simulate two previous failures
+        // simulate two previous attempts already made
+        job.incrementAttempts();
         job.markFailed("previous failure", Instant.now());
+        job.incrementAttempts();
         job.markFailed("previous failure", Instant.now());
 
         when(jobRepository.findEligibleJobs(any(Instant.class))).thenReturn(List.of(job));
@@ -125,7 +128,6 @@ class ProcessingJobSchedulerTest {
     void processPendingJobs_unknownJobType_jobMarkedFailedImmediately() {
         ProcessingJob job = buildJob(ProcessingJobType.GITHUB_FETCH_STEPS);
 
-        // simulate a scheduler with no handlers registered
         ProcessingJobScheduler emptyHandlerScheduler = new ProcessingJobScheduler(
                 jobRepository,
                 progressNotifier,
@@ -141,8 +143,8 @@ class ProcessingJobSchedulerTest {
         assertThat(job.getAttempts()).isEqualTo(job.getMaxAttempts());
         assertThat(job.getLastError()).contains("No handler registered");
         verify(progressNotifier).onJobFailed(
-                pipelineRun.getId(), ProcessingJobType.GITHUB_FETCH_STEPS, 
-                "No handler registered", false);
+                pipelineRun.getId(), ProcessingJobType.GITHUB_FETCH_STEPS,
+                "No handler registered for job type: GITHUB_FETCH_STEPS", false);
     }
 
     @Test
@@ -156,7 +158,9 @@ class ProcessingJobSchedulerTest {
         scheduler.processPendingJobs();
 
         assertThat(job1.getStatus()).isEqualTo(ProcessingJobStatus.COMPLETED);
+        assertThat(job1.getAttempts()).isEqualTo(1);
         assertThat(job2.getStatus()).isEqualTo(ProcessingJobStatus.COMPLETED);
+        assertThat(job2.getAttempts()).isEqualTo(1);
         verify(gitHubFetchStepsHandler).handle(job1);
         verify(gitHubFetchStepsHandler).handle(job2);
     }

@@ -99,7 +99,7 @@ public class ProcessingJob {
      * transitions it to {@link ProcessingJobStatus#FAILED} if all attempts
      * are exhausted.
      *
-     * <p>If {@code attempts < maxAttempts} after incrementing, the job returns
+     * If {@code attempts < maxAttempts} after incrementing, the job returns
      * to {@link ProcessingJobStatus#PENDING} with {@code nextRetryAt} set to
      * the provided retry time. Otherwise the job is permanently marked as
      * {@link ProcessingJobStatus#FAILED}.
@@ -109,7 +109,6 @@ public class ProcessingJob {
      *                     ignored if all attempts are exhausted
      */
     public void markFailed(String error, Instant nextRetryAt) {
-        this.attempts++;
         this.lastError = error;
 
         if (this.attempts >= this.maxAttempts) {
@@ -118,6 +117,14 @@ public class ProcessingJob {
             this.status = ProcessingJobStatus.PENDING;
             this.nextRetryAt = nextRetryAt;
         }
+    }
+
+    /**
+     * Increments the attempt counter when the job starts executing.
+     * Called by the scheduler before handing the job to a handler.
+     */
+    public void incrementAttempts() {
+        this.attempts++;
     }
 
     /**
