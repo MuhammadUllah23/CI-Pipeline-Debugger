@@ -41,51 +41,23 @@ public class GitHubStepsApiClient {
     public List<PipelineStepSaveRequest> fetchSteps(String owner, String repo, String runId) {
         log.info("Fetching steps from GitHub for {}/{} runId={}", owner, repo, runId);
 
-        try {
-            GitHubStepsApiResponse response = gitHubRestClient.get()
-                    .uri(JOBS_PATH, owner, repo, runId)
-                    .retrieve()
-                    .body(GitHubStepsApiResponse.class);
+        GitHubStepsApiResponse response = GitHubApiErrorHandler.execute(
+                () -> gitHubRestClient.get()
+                        .uri(JOBS_PATH, owner, repo, runId)
+                        .retrieve()
+                        .body(GitHubStepsApiResponse.class),
+                owner, repo, runId
+        );
 
-            if (response == null || response.getJobs() == null) {
-                log.warn("GitHub returned empty response for {}/{} runId={}", owner, repo, runId);
-                return List.of();
-            }
-
-            List<PipelineStepSaveRequest> requests = GitHubStepsApiMapper.toSaveRequests(response);
-            log.info("Fetched {} steps across {} jobs for {}/{} runId={}",
-                    requests.size(), response.getJobs().size(), owner, repo, runId);
-
-            return requests;
-
-        } catch (HttpClientErrorException e) {
-            log.warn("GitHub API 4xx error for {}/{} runId={} — status={} message={}",
-                    owner, repo, runId, e.getStatusCode(), e.getMessage());
-            throw ServiceException.of(ErrorCode.PROVIDER_API_CLIENT_ERROR)
-                    .addDetail("owner", owner)
-                    .addDetail("repo", repo)
-                    .addDetail("runId", runId)
-                    .addDetail("httpStatus", e.getStatusCode().value())
-                    .addDetail("cause", e.getMessage());
-
-        } catch (HttpServerErrorException e) {
-            log.warn("GitHub API 5xx error for {}/{} runId={} — status={} message={}",
-                    owner, repo, runId, e.getStatusCode(), e.getMessage());
-            throw ServiceException.of(ErrorCode.PROVIDER_API_UNAVAILABLE)
-                    .addDetail("owner", owner)
-                    .addDetail("repo", repo)
-                    .addDetail("runId", runId)
-                    .addDetail("httpStatus", e.getStatusCode().value())
-                    .addDetail("cause", e.getMessage());
-
-        } catch (ResourceAccessException e) {
-            log.warn("GitHub API timeout or connection failure for {}/{} runId={} — {}",
-                    owner, repo, runId, e.getMessage());
-            throw ServiceException.of(ErrorCode.PROVIDER_API_UNAVAILABLE)
-                    .addDetail("owner", owner)
-                    .addDetail("repo", repo)
-                    .addDetail("runId", runId)
-                    .addDetail("cause", e.getMessage());
+        if (response == null || response.getJobs() == null) {
+            log.warn("GitHub returned empty response for {}/{} runId={}", owner, repo, runId);
+            return List.of();
         }
+
+        List<PipelineStepSaveRequest> requests = GitHubStepsApiMapper.toSaveRequests(response);
+        log.info("Fetched {} steps across {} jobs for {}/{} runId={}",
+                requests.size(), response.getJobs().size(), owner, repo, runId);
+
+        return requests;
     }
 }
