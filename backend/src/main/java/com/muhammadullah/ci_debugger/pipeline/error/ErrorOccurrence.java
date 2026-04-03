@@ -56,4 +56,8 @@ public class ErrorOccurrence {
     public Integer getLineNumber() { return lineNumber; }
     public String getSnippet() { return snippet; }
     public Instant getCreatedAt() { return createdAt; }
+
+    public void setSnippet(String snippet) {
+        this.snippet = snippet;
+    }
 }

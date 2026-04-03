@@ -94,4 +94,9 @@ public class ErrorCluster {
     public Instant getFirstSeenAt() { return firstSeenAt; }
     public Instant getLastSeenAt() { return lastSeenAt; }
     public Instant getCreatedAt() { return createdAt; }
+
+
+    public void setRepresentativeMessage(String representativeMessage) {
+        this.representativeMessage = representativeMessage;
+    }
 }
