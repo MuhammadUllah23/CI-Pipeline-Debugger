@@ -2,6 +2,9 @@ package com.muhammadullah.ci_debugger.pipeline.step;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunConclusion;
+
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,5 +19,14 @@ public interface PipelineStepRepository extends JpaRepository<PipelineStep, UUID
      * @return all steps for the run, ordered by job name then step index
      */
     List<PipelineStep> findByPipelineRunIdOrderByJobNameAscStepIndexAsc(UUID pipelineRunId);
+
+    /**
+     * Returns all steps for a pipeline run whose conclusion is in the given set.
+     * Used by the error clustering service to find only failure-conclusioned steps.
+     */
+    List<PipelineStep> findByPipelineRunIdAndConclusionIn(
+            UUID pipelineRunId,
+            Collection<PipelineRunConclusion> conclusions
+    );
 
 }
