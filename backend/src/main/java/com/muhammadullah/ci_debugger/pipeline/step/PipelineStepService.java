@@ -3,6 +3,7 @@ package com.muhammadullah.ci_debugger.pipeline.step;
 import com.muhammadullah.ci_debugger.exception.ErrorCode;
 import com.muhammadullah.ci_debugger.exception.ServiceException;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRun;
+import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunConclusion;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunRepository;
 import com.muhammadullah.ci_debugger.pipeline.step.dto.PipelineStepResponse;
 import com.muhammadullah.ci_debugger.pipeline.step.dto.PipelineStepSaveRequest;
@@ -76,6 +77,19 @@ public class PipelineStepService {
         }
     }
 
+    /**
+     * Returns all steps for the given pipeline run whose conclusion indicates
+     * a failure. Used by job handlers to determine which steps need error clustering.
+     *
+     * @param pipelineRunId the ID of the pipeline run to fetch failed steps for
+     * @return all failed steps for the run, or an empty list if none exist
+     */
+    public List<PipelineStep> findFailedSteps(UUID pipelineRunId) {
+        return stepRepository.findByPipelineRunIdAndConclusionIn(
+                pipelineRunId, PipelineRunConclusion.FAILURE_CONCLUSIONS);
+    }
+
+    
     private PipelineStep buildStep(PipelineRun run, PipelineStepSaveRequest request) {
         PipelineStep step = new PipelineStep(
                 run,
