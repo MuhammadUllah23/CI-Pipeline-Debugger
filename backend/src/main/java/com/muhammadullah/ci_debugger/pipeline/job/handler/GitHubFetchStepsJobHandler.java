@@ -1,8 +1,10 @@
 package com.muhammadullah.ci_debugger.pipeline.job.handler;
 
 import com.muhammadullah.ci_debugger.pipeline.job.ProcessingJob;
+import com.muhammadullah.ci_debugger.pipeline.job.ProcessingJobService;
 import com.muhammadullah.ci_debugger.pipeline.job.ProcessingJobType;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRun;
+import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunConclusion;
 import com.muhammadullah.ci_debugger.pipeline.run.github.client.GitHubStepsApiClient;
 import com.muhammadullah.ci_debugger.pipeline.step.PipelineStepService;
 import com.muhammadullah.ci_debugger.pipeline.step.dto.PipelineStepSaveRequest;
@@ -19,13 +21,16 @@ public class GitHubFetchStepsJobHandler implements JobHandler {
 
     private final GitHubStepsApiClient gitHubStepsApiClient;
     private final PipelineStepService pipelineStepService;
+    private final ProcessingJobService processingJobService;
 
     public GitHubFetchStepsJobHandler(
             GitHubStepsApiClient gitHubStepsApiClient,
-            PipelineStepService pipelineStepService
+            PipelineStepService pipelineStepService,
+            ProcessingJobService processingJobService
     ) {
         this.gitHubStepsApiClient = gitHubStepsApiClient;
         this.pipelineStepService = pipelineStepService;
+        this.processingJobService = processingJobService;
     }
 
     @Override
@@ -49,5 +54,12 @@ public class GitHubFetchStepsJobHandler implements JobHandler {
         pipelineStepService.saveAll(run.getId(), stepRequests);
 
         log.info("Saved {} steps for pipeline run {}", stepRequests.size(), run.getId());
+
+        if (run.getConclusion() != PipelineRunConclusion.SUCCESS) {
+            processingJobService.enqueue(run.getId(), ProcessingJobType.GITHUB_FETCH_LOGS_AND_CLUSTER);
+            log.info("Enqueued GITHUB_FETCH_LOGS_AND_CLUSTER job for pipeline run {}", run.getId());
+        } else {
+            log.info("Skipping log fetch for successful pipeline run {}", run.getId());
+        }
     }
 }
