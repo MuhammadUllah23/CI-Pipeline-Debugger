@@ -48,7 +48,7 @@ class PipelineStepServiceTest {
         pipelineRunId = UUID.randomUUID();
         pipelineRun = new PipelineRun(
                 PipelineRunProvider.GITHUB,
-                "mhu-ventures",
+                "owner",
                 "ci-pipeline-debugger",
                 "123456789",
                 PipelineRunStatus.COMPLETED

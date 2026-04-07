@@ -25,7 +25,7 @@ import static org.hamcrest.Matchers.containsString;
 
 class GitHubStepsApiClientTest {
 
-    private static final String OWNER = "mhu-ventures";
+    private static final String OWNER = "owner";
     private static final String REPO = "ci-pipeline-debugger";
     private static final String RUN_ID = "123456789";
     private static final String EXPECTED_PATH = "/repos/" + OWNER + "/" + REPO + "/actions/runs/" + RUN_ID + "/jobs";

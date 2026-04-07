@@ -30,7 +30,7 @@ public class PipelineRunDevController {
 
         PipelineRun run = new PipelineRun(
                 PipelineRunProvider.GITHUB,
-                "mhu-ventures",
+                "owner",
                 "ci-pipeline-debugger",
                 providerRunId,
                 PipelineRunStatus.QUEUED

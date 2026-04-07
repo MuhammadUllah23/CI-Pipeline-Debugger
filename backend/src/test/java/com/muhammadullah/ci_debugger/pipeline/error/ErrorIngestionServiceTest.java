@@ -46,7 +46,7 @@ class ErrorIngestionServiceTest {
         pipelineRunId = UUID.randomUUID();
         pipelineRun = new PipelineRun(
                 PipelineRunProvider.GITHUB,
-                "mhu-ventures",
+                "owner",
                 "ci-pipeline-debugger",
                 "123456789",
                 PipelineRunStatus.COMPLETED
@@ -68,7 +68,7 @@ class ErrorIngestionServiceTest {
     private ErrorCluster buildCluster() {
         return new ErrorCluster(
                 "abc123",
-                "mhu-ventures",
+                "owner",
                 "ci-pipeline-debugger",
                 "build",
                 "Run tests",
