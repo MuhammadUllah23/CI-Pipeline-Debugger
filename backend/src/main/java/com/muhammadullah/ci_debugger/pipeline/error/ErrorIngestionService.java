@@ -119,7 +119,7 @@ public class ErrorIngestionService {
     /**
      * Computes a stable SHA-256 fingerprint for a
      * (owner, repo, jobName, stepName, conclusion) tuple.
-     * The result is 64 hex characters — well within the varchar(128) column.
+     * The result is 64 hex characters.
      */
     private String computeFingerprint(
             String owner, String repo, String jobName, String stepName, String conclusion) {
