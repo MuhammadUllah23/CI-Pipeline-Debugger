@@ -41,4 +41,16 @@ public interface PipelineRunRepository extends JpaRepository<PipelineRun, UUID> 
             """, nativeQuery = true)
     List<PipelineRun> findRecentRunsPerWorkflow();
 
+
+    /**
+     * Returns a paginated list of runs for a specific repo, sorted by
+     *
+     * @return a page of runs for the given repo
+     */
+    @Query("SELECT r FROM PipelineRun r WHERE r.owner = :owner AND r.repo = :repo ORDER BY r.createdAt DESC")
+    Page<PipelineRun> findByOwnerAndRepo(
+            @Param("owner") String owner,
+            @Param("repo") String repo,
+            Pageable pageable
+    );
 }
