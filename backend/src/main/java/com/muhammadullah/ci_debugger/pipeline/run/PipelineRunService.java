@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +22,8 @@ import com.muhammadullah.ci_debugger.pipeline.run.dto.WorkflowSummaryResponse;
 public class PipelineRunService {
 
     private static final Logger log = LoggerFactory.getLogger(PipelineRunService.class);
+
+    private static final int REPO_PAGE_SIZE = 20;
     
     private final PipelineRunRepository repository;
 
@@ -76,10 +80,6 @@ public class PipelineRunService {
      * Returns all repos grouped by owner → repo → workflowName, with the
      * 5 most recent runs per workflow.
      *
-     * <p>Grouping is done in memory after the database returns rows already
-     * ordered by {@code owner, repo, workflow_name, created_at DESC} — no
-     * secondary sorting needed here.
-     *
      * @return a list of repo summaries, each containing their workflow summaries
      */
     @Transactional(readOnly = true)
@@ -117,6 +117,23 @@ public class PipelineRunService {
                 })
                 .toList();
     }
+
+    /**
+     * Returns a paginated list of runs for a specific repo, sorted by
+     * {@code createdAt DESC}.
+     *
+     * @param owner    the repository owner
+     * @param repo     the repository name
+     * @param page     zero-based page number
+     * @return a page of run summaries for the given repo
+     */
+    @Transactional(readOnly = true)
+    public Page<RunSummaryResponse> listByRepo(String owner, String repo, int page) {
+        return repository.findByOwnerAndRepo(owner, repo, PageRequest.of(page, REPO_PAGE_SIZE))
+                .map(RunSummaryResponse::from);
+    }
+
+    
 
     private PipelineRun createNew(
             PipelineRunUpsertRequest req,
