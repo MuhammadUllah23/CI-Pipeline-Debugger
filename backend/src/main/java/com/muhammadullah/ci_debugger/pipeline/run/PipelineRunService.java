@@ -2,6 +2,7 @@ package com.muhammadullah.ci_debugger.pipeline.run;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,7 +134,24 @@ public class PipelineRunService {
                 .map(RunSummaryResponse::from);
     }
 
-    
+    /**
+     * Returns a single pipeline run by ID.
+     *
+     * @param id the pipeline run ID
+     * @return the run as a full response
+     * @throws ServiceException with {@link ErrorCode#PIPELINE_RUN_NOT_FOUND} if
+     *                          no run exists for the given ID
+     */
+    @Transactional(readOnly = true)
+    public PipelineRunResponse findById(UUID id) {
+        return repository.findById(id)
+                .map(PipelineRunResponse::from)
+                .orElseThrow(() -> {
+                    log.warn("Pipeline run {} not found", id);
+                    return ServiceException.of(ErrorCode.PIPELINE_RUN_NOT_FOUND)
+                            .addDetail("id", id);
+                });
+    }
 
     private PipelineRun createNew(
             PipelineRunUpsertRequest req,
