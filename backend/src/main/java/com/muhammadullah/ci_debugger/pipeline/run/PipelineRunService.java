@@ -1,6 +1,7 @@
 package com.muhammadullah.ci_debugger.pipeline.run;
 
 import java.time.Instant;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,9 @@ import com.muhammadullah.ci_debugger.exception.ErrorCode;
 import com.muhammadullah.ci_debugger.exception.ServiceException;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunUpsertRequest;
+import com.muhammadullah.ci_debugger.pipeline.run.dto.RepoSummaryResponse;
+import com.muhammadullah.ci_debugger.pipeline.run.dto.RunSummaryResponse;
+import com.muhammadullah.ci_debugger.pipeline.run.dto.WorkflowSummaryResponse;
 
 @Service
 public class PipelineRunService {
@@ -66,6 +70,52 @@ public class PipelineRunService {
                     .addDetail("providerRunId", req.getProviderRunId())
                     .addDetail("cause", e.getMessage());
         }
+    }
+
+        /**
+     * Returns all repos grouped by owner → repo → workflowName, with the
+     * 5 most recent runs per workflow.
+     *
+     * <p>Grouping is done in memory after the database returns rows already
+     * ordered by {@code owner, repo, workflow_name, created_at DESC} — no
+     * secondary sorting needed here.
+     *
+     * @return a list of repo summaries, each containing their workflow summaries
+     */
+    @Transactional(readOnly = true)
+    public List<RepoSummaryResponse> listGrouped() {
+        List<PipelineRun> runs = repository.findRecentRunsPerWorkflow();
+
+        return runs.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        r -> r.getOwner() + "/" + r.getRepo(),
+                        java.util.LinkedHashMap::new,
+                        java.util.stream.Collectors.toList()
+                ))
+                .entrySet().stream()
+                .map(entry -> {
+                    List<PipelineRun> repoRuns = entry.getValue();
+                    String owner = repoRuns.get(0).getOwner();
+                    String repo = repoRuns.get(0).getRepo();
+
+                    List<WorkflowSummaryResponse> workflows = repoRuns.stream()
+                            .collect(java.util.stream.Collectors.groupingBy(
+                                    r -> r.getWorkflowName() != null ? r.getWorkflowName() : "",
+                                    java.util.LinkedHashMap::new,
+                                    java.util.stream.Collectors.toList()
+                            ))
+                            .entrySet().stream()
+                            .map(wEntry -> new WorkflowSummaryResponse(
+                                    wEntry.getKey(),
+                                    wEntry.getValue().stream()
+                                            .map(RunSummaryResponse::from)
+                                            .toList()
+                            ))
+                            .toList();
+
+                    return new RepoSummaryResponse(owner, repo, workflows);
+                })
+                .toList();
     }
 
     private PipelineRun createNew(
