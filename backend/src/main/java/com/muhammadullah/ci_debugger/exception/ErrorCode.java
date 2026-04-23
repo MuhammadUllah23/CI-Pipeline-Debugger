@@ -21,6 +21,9 @@ public enum ErrorCode {
     PIPELINE_RUN_NOT_FOUND("Pipeline run not found", HttpStatus.NOT_FOUND),
     PIPELINE_STEP_NOT_FOUND("Pipeline step not found", HttpStatus.NOT_FOUND),
 
+    // ── ErrorCluster ────────────────────────────────────────────────────────
+    ERROR_CLUSTER_NOT_FOUND("Error cluster not found", HttpStatus.NOT_FOUND),
+
     // ── Storage ──────────────────────────────────────────────────────────────
     DB_UPSERT_FAILED("Failed to upsert pipeline run", HttpStatus.INTERNAL_SERVER_ERROR),
     DB_CONNECTION_FAILED("Database connection failed", HttpStatus.SERVICE_UNAVAILABLE),
