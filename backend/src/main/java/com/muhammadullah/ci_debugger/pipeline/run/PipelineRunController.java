@@ -3,9 +3,13 @@ package com.muhammadullah.ci_debugger.pipeline.run;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.muhammadullah.ci_debugger.pipeline.error.ErrorClusterService;
+import com.muhammadullah.ci_debugger.pipeline.error.dto.ErrorClusterResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.RepoSummaryResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.RunSummaryResponse;
+import com.muhammadullah.ci_debugger.pipeline.step.PipelineStepService;
+import com.muhammadullah.ci_debugger.pipeline.step.dto.PipelineStepResponse;
 
 import java.util.List;
 import java.util.UUID;
@@ -20,9 +24,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping("/api/runs")
 public class PipelineRunController {
     private final PipelineRunService pipelineRunService;
+    private final PipelineStepService pipelineStepService;
+    private final ErrorClusterService errorClusterService;
 
-    public PipelineRunController(PipelineRunService pipelineRunService) {
+    public PipelineRunController(PipelineRunService pipelineRunService, 
+                                 PipelineStepService pipelineStepService, 
+                                 ErrorClusterService  errorClusterService) {
         this.pipelineRunService = pipelineRunService;
+        this.pipelineStepService = pipelineStepService;
+        this.errorClusterService = errorClusterService;
     }
 
     /**
@@ -55,5 +65,20 @@ public class PipelineRunController {
         return pipelineRunService.findById(id);
     }
     
+    /**
+     * Returns a list of steps for a run.
+     */
+    @GetMapping("/{id}/steps")
+    public List<PipelineStepResponse> getSteps(@PathVariable UUID id) {
+        return pipelineStepService.getStepsForRun(id);
+    }
+
+    /**
+     * Returns a list of error clusters for a run.
+     */
+    @GetMapping("/{id}/clusters")
+    public List<ErrorClusterResponse> getClusters(@PathVariable UUID id) {
+        return errorClusterService.findByRunId(id);
+    }
 
 }
