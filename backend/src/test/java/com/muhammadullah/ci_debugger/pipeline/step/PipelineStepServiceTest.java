@@ -23,6 +23,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -159,5 +160,84 @@ class PipelineStepServiceTest {
 
         assertThat(responses).isEmpty();
         verify(stepRepository).saveAll(anyList());
+    }
+
+    // ── getStepsForRun ─────────────────────────────────────────────────────
+
+    @Test
+    void getStepsForRun_happyPath_returnsStepsOrderedByJobNameAndStepIndex() {
+        when(runRepository.existsById(pipelineRunId)).thenReturn(true);
+        when(stepRepository.findByPipelineRunIdOrderByJobNameAscStepIndexAsc(pipelineRunId))
+                .thenReturn(List.of(
+                        buildStep("build", "Checkout code", 1),
+                        buildStep("build", "Run tests", 2),
+                        buildStep("deploy", "Upload artifact", 1)
+                ));
+
+        List<PipelineStepResponse> result = pipelineStepService.getStepsForRun(pipelineRunId);
+
+        assertThat(result).hasSize(3);
+        assertThat(result.get(0).getJobName()).isEqualTo("build");
+        assertThat(result.get(0).getStepName()).isEqualTo("Checkout code");
+        assertThat(result.get(1).getStepName()).isEqualTo("Run tests");
+        assertThat(result.get(2).getJobName()).isEqualTo("deploy");
+        assertThat(result.get(2).getStepName()).isEqualTo("Upload artifact");
+    }
+
+    @Test
+    void getStepsForRun_runNotFound_throwsPipelineRunNotFound() {
+        when(runRepository.existsById(pipelineRunId)).thenReturn(false);
+
+        assertThatThrownBy(() -> pipelineStepService.getStepsForRun(pipelineRunId))
+                .isInstanceOf(ServiceException.class)
+                .satisfies(ex -> {
+                    ServiceException se = (ServiceException) ex;
+                    assertThat(se.getErrorCode()).isEqualTo(ErrorCode.PIPELINE_RUN_NOT_FOUND);
+                    assertThat(se.getDetails()).containsKey("pipelineRunId");
+                });
+
+        verify(stepRepository, never()).findByPipelineRunIdOrderByJobNameAscStepIndexAsc(any());
+    }
+
+    @Test
+    void getStepsForRun_noSteps_returnsEmptyList() {
+        when(runRepository.existsById(pipelineRunId)).thenReturn(true);
+        when(stepRepository.findByPipelineRunIdOrderByJobNameAscStepIndexAsc(pipelineRunId))
+                .thenReturn(List.of());
+
+        List<PipelineStepResponse> result = pipelineStepService.getStepsForRun(pipelineRunId);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void getStepsForRun_mapsAllStepFields() {
+        Instant startedAt = Instant.now().minusSeconds(10);
+        Instant completedAt = Instant.now();
+
+        PipelineStep step = new PipelineStep(pipelineRun, "build", "Run tests", 1);
+        step.applyCompletion(
+                PipelineRunStatus.COMPLETED,
+                PipelineRunConclusion.FAILURE,
+                startedAt,
+                completedAt,
+                null
+        );
+
+        when(runRepository.existsById(pipelineRunId)).thenReturn(true);
+        when(stepRepository.findByPipelineRunIdOrderByJobNameAscStepIndexAsc(pipelineRunId))
+                .thenReturn(List.of(step));
+
+        List<PipelineStepResponse> result = pipelineStepService.getStepsForRun(pipelineRunId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getJobName()).isEqualTo("build");
+        assertThat(result.get(0).getStepName()).isEqualTo("Run tests");
+        assertThat(result.get(0).getStepIndex()).isEqualTo(1);
+        assertThat(result.get(0).getStatus()).isEqualTo(PipelineRunStatus.COMPLETED);
+        assertThat(result.get(0).getConclusion()).isEqualTo(PipelineRunConclusion.FAILURE);
+        assertThat(result.get(0).getStartedAt()).isEqualTo(startedAt);
+        assertThat(result.get(0).getCompletedAt()).isEqualTo(completedAt);
+        assertThat(result.get(0).getDurationMs()).isNotNull();
     }
 }
