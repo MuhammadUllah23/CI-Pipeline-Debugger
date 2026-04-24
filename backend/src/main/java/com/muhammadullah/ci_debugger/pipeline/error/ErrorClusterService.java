@@ -86,11 +86,9 @@ public class ErrorClusterService {
     public List<ErrorClusterResponse> findByRunId(UUID pipelineRunId) {
         log.debug("Fetching error clusters for pipeline run {}", pipelineRunId);
 
-        return occurrenceRepository
-                .findByPipelineRunId(pipelineRunId)
+        return clusterRepository.findByRunId(pipelineRunId)
                 .stream()
-                .map(occurrence -> ErrorClusterResponse.from(occurrence.getErrorCluster()))
-                .distinct()
+                .map(ErrorClusterResponse::from)
                 .toList();
-    }
+        }
 }
