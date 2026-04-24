@@ -35,10 +35,6 @@ public class PipelineStepService {
     /**
      * Persists a batch of steps for the given pipeline run.
      *
-     * <p>Steps are saved in the order provided. If any step fails to save,
-     * the entire batch is rolled back — partial step data for a run is
-     * worse than no step data at all.
-     *
      * @param pipelineRunId the ID of the pipeline run these steps belong to
      * @param requests      the list of steps to save
      * @return the saved steps as responses
@@ -87,6 +83,29 @@ public class PipelineStepService {
     public List<PipelineStep> findFailedSteps(UUID pipelineRunId) {
         return stepRepository.findByPipelineRunIdAndConclusionIn(
                 pipelineRunId, PipelineRunConclusion.FAILURE_CONCLUSIONS);
+    }
+
+    /**
+     * Returns all steps for a given pipeline run ordered by job name
+     * then step index — the natural reading order for the dashboard.
+     *
+     * @param pipelineRunId the ID of the pipeline run to fetch steps for
+     * @return steps ordered by job_name ASC, step_index ASC
+     * @throws ServiceException with {@link ErrorCode#PIPELINE_RUN_NOT_FOUND} if
+     *                          no run exists for the given ID
+     */
+    @Transactional(readOnly = true)
+    public List<PipelineStepResponse> getStepsForRun(UUID pipelineRunId) {
+        if (!runRepository.existsById(pipelineRunId)) {
+            log.warn("Cannot fetch steps — pipeline run {} not found", pipelineRunId);
+            throw ServiceException.of(ErrorCode.PIPELINE_RUN_NOT_FOUND)
+                    .addDetail("pipelineRunId", pipelineRunId);
+        }
+
+        return stepRepository.findByPipelineRunIdOrderByJobNameAscStepIndexAsc(pipelineRunId)
+                .stream()
+                .map(PipelineStepResponse::from)
+                .toList();
     }
 
     
