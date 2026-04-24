@@ -2,6 +2,8 @@ package com.muhammadullah.ci_debugger.pipeline.error.dto;
 
 import java.util.List;
 
+import com.muhammadullah.ci_debugger.pipeline.error.ErrorCluster;
+
 public class ErrorClusterWithOccurrencesResponse {
 
     private ErrorClusterResponse cluster;
@@ -9,9 +11,9 @@ public class ErrorClusterWithOccurrencesResponse {
 
     private ErrorClusterWithOccurrencesResponse() {};
 
-    public static ErrorClusterWithOccurrencesResponse of(ErrorClusterResponse errorCluster, List<ErrorOccurrenceResponse> occurrences) {
+    public static ErrorClusterWithOccurrencesResponse of(ErrorCluster errorCluster, List<ErrorOccurrenceResponse> occurrences) {
         ErrorClusterWithOccurrencesResponse reponse = new ErrorClusterWithOccurrencesResponse();
-        reponse.cluster = errorCluster;
+        reponse.cluster = ErrorClusterResponse.from(errorCluster);
         reponse.occurrences = occurrences;
         return reponse;
     }
