@@ -87,43 +87,91 @@ Adds asynchronous background processing to fetch and persist step-level data fro
 - Step data only fetched on `completed` webhook — GitHub step data is incomplete mid-run
 - `scheduled_at` immutable — records original enqueue time; `next_retry_at` handles retry delay separately
 - `JOIN FETCH` on eligible jobs query — avoids lazy loading proxy errors outside transaction scope
-- Provider-specific job types (`GITHUB_FETCH_STEPS`) — prevents handler map conflicts when GitLab/CircleCI support is added
+- Provider-specific job types — prevents handler map conflicts when GitLab/CircleCI support is added
 - Single configured GitHub API token for MVP — per-user OAuth deferred to a future phase
 
 ---
 
-### 🔲 Phase 3 — Error Clustering
+### ✅ Phase 3 — Error Clustering
 
 Groups recurring step failures across runs to surface patterns and repeated errors.
 
-**Planned:**
-- `ErrorClusterService` — groups failures by step name, error message similarity, and repository
-- `ErrorClusterController` — exposes cluster data via REST API
-- Background job type `CLUSTER_ERRORS` — triggered after step data is persisted
-- Dashboard view showing most frequent failure patterns
+**What's included:**
+- `error_cluster` table — recurring failure patterns identified by `owner + repo + job_name + step_name + conclusion` with SHA-256 fingerprint
+- `error_occurrence` table — links a cluster to a specific pipeline run and step with log snippet
+- `GitHubLogsApiClient` — downloads GitHub Actions log zip, unzips in memory, extracts `[ERROR]` and `##[error]` prefixed lines
+- `ErrorIngestionService` — provider-agnostic, finds or creates clusters via fingerprint, saves occurrences in one transaction
+- Single combined job type `GITHUB_FETCH_LOGS_AND_CLUSTER` — triggered after step fetch completes on failed runs
+
+**Key design decisions:**
+- Single combined job type avoids data handoff problem between async jobs
+- `ErrorIngestionService` signature uses `Map<PipelineStep, String>` — provider-agnostic
+- Log parsing extracts error lines only — full logs discarded after parsing, not stored
+- `step_log` table dropped — log parsing too unstructured to be worth storing raw logs
 
 ---
 
-### 🔲 Phase 4 — Dashboard
+### ✅ Phase 4 — REST API
+
+Exposes pipeline run, step, and error cluster data via a REST API for consumption by the dashboard frontend.
+
+**What's included:**
+- `GET /api/runs` — all repos grouped by owner → repo → workflowName, 5 most recent runs per workflow using PostgreSQL ROW_NUMBER() window function
+- `GET /api/runs/{owner}/{repo}` — paginated flat list of runs for a specific repo, 20 per page, sorted by `created_at DESC`
+- `GET /api/runs/{id}` — single run detail
+- `GET /api/runs/{id}/steps` — all steps for a run ordered by `job_name ASC`, `step_index ASC`
+- `GET /api/runs/{id}/clusters` — error clusters triggered by a specific run
+- `GET /api/clusters` — all clusters sorted by `occurrence_count DESC`, configurable limit clamped to 100
+- `GET /api/clusters/{id}` — single cluster detail with all occurrences
+- Full unit test coverage across all new service methods
+
+**Key design decisions:**
+- Backend handles grouping and pagination — not the frontend
+- `RunSummaryResponse` as a lean DTO for list views — full `PipelineRunResponse` reserved for detail endpoint
+- `ErrorClusterWithOccurrencesResponse` for cluster detail — occurrences not loaded on list endpoints
+- `readOnly = true` on all read service methods — skips Hibernate dirty checking
+
+---
+
+### 🔲 Phase 5 — Pull Request Tracking & Branch Status
+
+Extends pipeline run ingestion to capture pull request metadata, enabling PR-level views on the dashboard.
+
+**Planned:**
+- New columns on `pipeline_run`: `pr_number`, `pr_title`, `pr_state`
+- `GitHubWebhookPayload` updated to deserialize the `pull_requests` array from the webhook payload
+- PR info extracted in `GitHubWebhookMapper` and carried through `PipelineRunUpsertRequest`
+- New endpoints:
+  - `GET /api/runs/pull-requests?owner=&repo=` — all open PR runs for a repo
+  - `GET /api/runs/main-status?owner=&repo=` — last run on main branch
+  - `GET /api/runs/last-merged?owner=&repo=` — most recently merged PR for a repo
+- CI workflow updated to trigger on pull requests targeting main
+
+---
+
+### 🔲 Phase 6 — Dashboard Frontend
 
 Visual frontend for exploring pipeline runs, step timelines, and error clusters.
 
 **Planned:**
-- React dashboard with run list, step-level drill-down, and error cluster views
+- React dashboard with:
+  - Home page — repos grouped by workflow with 5 most recent runs each
+  - Repo detail page — paginated run history, main branch status, last merged PR, open PRs
+  - Run detail page — step breakdown, error clusters, log snippets
+  - Error clusters page — most frequent failures sorted by occurrence count
 - Real-time step progress via WebSocket (`RunProgressNotifier` real implementation)
-- GitHub OAuth authentication — per-user token management
-- Token URL approach for sharing with early testers
 
 ---
 
-### 🔲 Phase 5 — Additional Providers
+### 🔲 Phase 7 — GitHub OAuth
 
-Extends ingestion and step fetching to GitLab and CircleCI.
+Adds per-user authentication and token management.
 
 **Planned:**
-- `GitLabWebhookController` and `CircleCiWebhookController`
-- Provider-specific `JobHandler` implementations (`GitLabFetchStepsJobHandler`, `CircleCiFetchStepsJobHandler`)
-- Provider-agnostic `PipelineRunService` already in place — minimal changes required
+- GitHub OAuth2 login
+- Per-user GitHub API token storage
+- Owner-scoped queries across all endpoints
+- Per-installation webhook secret management
 
 ---
 
