@@ -186,4 +186,4 @@ The following are known limitations consciously deferred in favour of a simpler 
 - **Log storage in PostgreSQL** — S3 explicitly ruled out for MVP
 - **No real-time updates** — dashboard requires polling; `RunProgressNotifier` is `NoOp`
 - **No pre-computed performance snapshots** — all metrics derived at query time
-- **GitHub only** — GitLab and CircleCI deferred to Phase 5
+- **GitHub only** — GitLab and CircleCI deferred to Phase 8
