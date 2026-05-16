@@ -12,6 +12,11 @@ public class WorkflowSummaryResponse {
         this.recentRuns = recentRuns;
     }
 
-    public String getWorkflowName() { return workflowName; }
-    public List<RunSummaryResponse> getRecentRuns() { return recentRuns; }
+    public String getWorkflowName() {
+        return workflowName;
+    }
+
+    public List<RunSummaryResponse> getRecentRuns() {
+        return recentRuns;
+    }
 }

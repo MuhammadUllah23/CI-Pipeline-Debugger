@@ -25,8 +25,7 @@ public class ErrorClusterService {
 
     public ErrorClusterService(
             ErrorClusterRepository clusterRepository,
-            ErrorOccurrenceRepository occurrenceRepository
-    ) {
+            ErrorOccurrenceRepository occurrenceRepository) {
         this.clusterRepository = clusterRepository;
         this.occurrenceRepository = occurrenceRepository;
     }
@@ -90,5 +89,5 @@ public class ErrorClusterService {
                 .stream()
                 .map(ErrorClusterResponse::from)
                 .toList();
-        }
+    }
 }

@@ -37,15 +37,47 @@ public class PipelineStepResponse {
         return response;
     }
 
-    public UUID getId() { return id; }
-    public UUID getPipelineRunId() { return pipelineRunId; }
-    public String getJobName() { return jobName; }
-    public String getStepName() { return stepName; }
-    public int getStepIndex() { return stepIndex; }
-    public PipelineRunStatus getStatus() { return status; }
-    public PipelineRunConclusion getConclusion() { return conclusion; }
-    public Instant getStartedAt() { return startedAt; }
-    public Instant getCompletedAt() { return completedAt; }
-    public Long getDurationMs() { return durationMs; }
-    public Instant getCreatedAt() { return createdAt; }
+    public UUID getId() {
+        return id;
+    }
+
+    public UUID getPipelineRunId() {
+        return pipelineRunId;
+    }
+
+    public String getJobName() {
+        return jobName;
+    }
+
+    public String getStepName() {
+        return stepName;
+    }
+
+    public int getStepIndex() {
+        return stepIndex;
+    }
+
+    public PipelineRunStatus getStatus() {
+        return status;
+    }
+
+    public PipelineRunConclusion getConclusion() {
+        return conclusion;
+    }
+
+    public Instant getStartedAt() {
+        return startedAt;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
+    }
+
+    public Long getDurationMs() {
+        return durationMs;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 }

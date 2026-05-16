@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
-
 @Configuration
 public class GitHubApiConfig {
 
@@ -22,7 +21,6 @@ public class GitHubApiConfig {
     @Value("${github.api.read-timeout-ms}")
     private int readTimeoutMs;
 
-
     @Bean
     public RestClient gitHubRestClient() {
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
@@ -30,18 +28,16 @@ public class GitHubApiConfig {
         requestFactory.setReadTimeout(readTimeoutMs);
 
         return RestClient.builder()
-                    .baseUrl(baseUrl)
-                    .defaultHeaders(
+                .baseUrl(baseUrl)
+                .defaultHeaders(
                         httpHeaders -> {
-                        httpHeaders.set("Authorization", "Bearer " + apiToken);
-                        httpHeaders.set("Accept", "application/vnd.github+json");
-                        httpHeaders.set("X-GitHub-Api-Version", "2022-11-28");
-                    })
-                    .requestFactory(requestFactory)
-                    .build();
-
+                            httpHeaders.set("Authorization", "Bearer " + apiToken);
+                            httpHeaders.set("Accept", "application/vnd.github+json");
+                            httpHeaders.set("X-GitHub-Api-Version", "2022-11-28");
+                        })
+                .requestFactory(requestFactory)
+                .build();
 
     }
 
-    
 }

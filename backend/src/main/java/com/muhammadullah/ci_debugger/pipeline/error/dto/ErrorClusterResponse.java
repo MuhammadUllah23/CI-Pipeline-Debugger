@@ -37,16 +37,51 @@ public class ErrorClusterResponse {
         return r;
     }
 
-    public UUID getId() { return id; }
-    public String getFingerprint() { return fingerprint; }
-    public String getOwner() { return owner; }
-    public String getRepo() { return repo; }
-    public String getJobName() { return jobName; }
-    public String getStepName() { return stepName; }
-    public String getConclusion() { return conclusion; }
-    public String getRepresentativeMessage() { return representativeMessage; }
-    public long getOccurrenceCount() { return occurrenceCount; }
-    public Instant getFirstSeenAt() { return firstSeenAt; }
-    public Instant getLastSeenAt() { return lastSeenAt; }
-    public Instant getCreatedAt() { return createdAt; }
+    public UUID getId() {
+        return id;
+    }
+
+    public String getFingerprint() {
+        return fingerprint;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public String getRepo() {
+        return repo;
+    }
+
+    public String getJobName() {
+        return jobName;
+    }
+
+    public String getStepName() {
+        return stepName;
+    }
+
+    public String getConclusion() {
+        return conclusion;
+    }
+
+    public String getRepresentativeMessage() {
+        return representativeMessage;
+    }
+
+    public long getOccurrenceCount() {
+        return occurrenceCount;
+    }
+
+    public Instant getFirstSeenAt() {
+        return firstSeenAt;
+    }
+
+    public Instant getLastSeenAt() {
+        return lastSeenAt;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 }

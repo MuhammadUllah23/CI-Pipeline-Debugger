@@ -14,7 +14,7 @@ public interface ErrorClusterRepository extends JpaRepository<ErrorCluster, UUID
     Optional<ErrorCluster> findByFingerprint(String fingerprint);
 
     /**
-     * Returns clusters ordered by occurrence count descending. 
+     * Returns clusters ordered by occurrence count descending.
      */
     List<ErrorCluster> findAllByOrderByOccurrenceCountDesc(Pageable pageable);
 

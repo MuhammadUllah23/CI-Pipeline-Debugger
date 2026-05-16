@@ -11,8 +11,13 @@ public class GitHubStepsApiResponse {
 
     private List<Job> jobs;
 
-    public List<Job> getJobs() { return jobs; }
-    public void setJobs(List<Job> jobs) { this.jobs = jobs; }
+    public List<Job> getJobs() {
+        return jobs;
+    }
+
+    public void setJobs(List<Job> jobs) {
+        this.jobs = jobs;
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Job {
@@ -22,15 +27,37 @@ public class GitHubStepsApiResponse {
         private String conclusion;
         private List<Step> steps;
 
-        public String getName() { return name; }
-        public String getStatus() { return status; }
-        public String getConclusion() { return conclusion; }
-        public List<Step> getSteps() { return steps; }
+        public String getName() {
+            return name;
+        }
 
-        public void setName(String name) { this.name = name; }
-        public void setStatus(String status) { this.status = status; }
-        public void setConclusion(String conclusion) { this.conclusion = conclusion; }
-        public void setSteps(List<Step> steps) { this.steps = steps; }
+        public String getStatus() {
+            return status;
+        }
+
+        public String getConclusion() {
+            return conclusion;
+        }
+
+        public List<Step> getSteps() {
+            return steps;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public void setStatus(String status) {
+            this.status = status;
+        }
+
+        public void setConclusion(String conclusion) {
+            this.conclusion = conclusion;
+        }
+
+        public void setSteps(List<Step> steps) {
+            this.steps = steps;
+        }
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         public static class Step {
@@ -46,19 +73,53 @@ public class GitHubStepsApiResponse {
             @JsonProperty("completed_at")
             private Instant completedAt;
 
-            public String getName() { return name; }
-            public String getStatus() { return status; }
-            public String getConclusion() { return conclusion; }
-            public int getNumber() { return number; }
-            public Instant getStartedAt() { return startedAt; }
-            public Instant getCompletedAt() { return completedAt; }
+            public String getName() {
+                return name;
+            }
 
-            public void setName(String name) { this.name = name; }
-            public void setStatus(String status) { this.status = status; }
-            public void setConclusion(String conclusion) { this.conclusion = conclusion; }
-            public void setNumber(int number) { this.number = number; }
-            public void setStartedAt(Instant startedAt) { this.startedAt = startedAt; }
-            public void setCompletedAt(Instant completedAt) { this.completedAt = completedAt; }
+            public String getStatus() {
+                return status;
+            }
+
+            public String getConclusion() {
+                return conclusion;
+            }
+
+            public int getNumber() {
+                return number;
+            }
+
+            public Instant getStartedAt() {
+                return startedAt;
+            }
+
+            public Instant getCompletedAt() {
+                return completedAt;
+            }
+
+            public void setName(String name) {
+                this.name = name;
+            }
+
+            public void setStatus(String status) {
+                this.status = status;
+            }
+
+            public void setConclusion(String conclusion) {
+                this.conclusion = conclusion;
+            }
+
+            public void setNumber(int number) {
+                this.number = number;
+            }
+
+            public void setStartedAt(Instant startedAt) {
+                this.startedAt = startedAt;
+            }
+
+            public void setCompletedAt(Instant completedAt) {
+                this.completedAt = completedAt;
+            }
         }
     }
 }

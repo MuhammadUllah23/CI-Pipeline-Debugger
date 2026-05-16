@@ -34,8 +34,7 @@ public class GitHubWebhookController {
             HmacVerifier hmacVerifier,
             ObjectMapper objectMapper,
             PipelineRunService pipelineRunService,
-            ProcessingJobService processingJobService
-    ) {
+            ProcessingJobService processingJobService) {
         this.hmacVerifier = hmacVerifier;
         this.objectMapper = objectMapper;
         this.pipelineRunService = pipelineRunService;
@@ -46,8 +45,7 @@ public class GitHubWebhookController {
     public ResponseEntity<PipelineRunResponse> receive(
             @RequestBody byte[] rawBody,
             @RequestHeader(value = GitHubWebhookConstants.SIGNATURE_HEADER, required = false) String signature,
-            @RequestHeader(value = "X-GitHub-Event", defaultValue = "") String eventType
-    ) throws IOException {
+            @RequestHeader(value = "X-GitHub-Event", defaultValue = "") String eventType) throws IOException {
         if (!hmacVerifier.verify(rawBody, signature)) {
             log.warn("Rejected GitHub webhook — invalid HMAC signature");
             return ResponseEntity.status(401).build();
@@ -62,10 +60,12 @@ public class GitHubWebhookController {
         PipelineRunResponse pipelineRunResponse = pipelineRunService.upsert(pipelineRunUpsertRequest);
 
         log.info("Upserted pipeline run {} for {}/{} (action={})",
-                pipelineRunResponse.getId(), pipelineRunResponse.getOwner(), pipelineRunResponse.getRepo(), payload.getAction());
+                pipelineRunResponse.getId(), pipelineRunResponse.getOwner(), pipelineRunResponse.getRepo(),
+                payload.getAction());
 
         if (GitHubWebhookConstants.ACTION_COMPLETED.equals(payload.getAction())) {
-            ProcessingJobResponse job = processingJobService.enqueue(pipelineRunResponse.getId(), ProcessingJobType.GITHUB_FETCH_STEPS);
+            ProcessingJobResponse job = processingJobService.enqueue(pipelineRunResponse.getId(),
+                    ProcessingJobType.GITHUB_FETCH_STEPS);
             log.info("Enqueued FETCH_STEPS job {} for pipeline run {}", job.getId(), pipelineRunResponse.getId());
         }
 

@@ -29,11 +29,31 @@ public class ErrorOccurrenceResponse {
         return r;
     }
 
-    public UUID getId() { return id; }
-    public UUID getErrorClusterId() { return errorClusterId; }
-    public UUID getPipelineRunId() { return pipelineRunId; }
-    public UUID getPipelineStepId() { return pipelineStepId; }
-    public String getSnippet() { return snippet; }
-    public Integer getLineNumber() { return lineNumber; }
-    public Instant getCreatedAt() { return createdAt; }
+    public UUID getId() {
+        return id;
+    }
+
+    public UUID getErrorClusterId() {
+        return errorClusterId;
+    }
+
+    public UUID getPipelineRunId() {
+        return pipelineRunId;
+    }
+
+    public UUID getPipelineStepId() {
+        return pipelineStepId;
+    }
+
+    public String getSnippet() {
+        return snippet;
+    }
+
+    public Integer getLineNumber() {
+        return lineNumber;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 }

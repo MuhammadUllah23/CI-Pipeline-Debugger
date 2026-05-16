@@ -1,7 +1,13 @@
 package com.muhammadullah.ci_debugger.pipeline.error;
 
-import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -49,7 +55,8 @@ public class ErrorCluster {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    protected ErrorCluster() {}
+    protected ErrorCluster() {
+    }
 
     public ErrorCluster(
             String fingerprint,
@@ -57,8 +64,7 @@ public class ErrorCluster {
             String repo,
             String jobName,
             String stepName,
-            String conclusion
-    ) {
+            String conclusion) {
         this.fingerprint = fingerprint;
         this.owner = owner;
         this.repo = repo;
@@ -82,19 +88,53 @@ public class ErrorCluster {
         this.lastSeenAt = Instant.now();
     }
 
-    public UUID getId() { return id; }
-    public String getFingerprint() { return fingerprint; }
-    public String getOwner() { return owner; }
-    public String getRepo() { return repo; }
-    public String getJobName() { return jobName; }
-    public String getStepName() { return stepName; }
-    public String getConclusion() { return conclusion; }
-    public String getRepresentativeMessage() { return representativeMessage; }
-    public long getOccurrenceCount() { return occurrenceCount; }
-    public Instant getFirstSeenAt() { return firstSeenAt; }
-    public Instant getLastSeenAt() { return lastSeenAt; }
-    public Instant getCreatedAt() { return createdAt; }
+    public UUID getId() {
+        return id;
+    }
 
+    public String getFingerprint() {
+        return fingerprint;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public String getRepo() {
+        return repo;
+    }
+
+    public String getJobName() {
+        return jobName;
+    }
+
+    public String getStepName() {
+        return stepName;
+    }
+
+    public String getConclusion() {
+        return conclusion;
+    }
+
+    public String getRepresentativeMessage() {
+        return representativeMessage;
+    }
+
+    public long getOccurrenceCount() {
+        return occurrenceCount;
+    }
+
+    public Instant getFirstSeenAt() {
+        return firstSeenAt;
+    }
+
+    public Instant getLastSeenAt() {
+        return lastSeenAt;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 
     public void setRepresentativeMessage(String representativeMessage) {
         this.representativeMessage = representativeMessage;

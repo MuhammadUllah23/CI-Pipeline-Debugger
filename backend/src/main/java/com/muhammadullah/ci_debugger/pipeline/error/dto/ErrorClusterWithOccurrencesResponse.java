@@ -9,16 +9,23 @@ public class ErrorClusterWithOccurrencesResponse {
     private ErrorClusterResponse cluster;
     private List<ErrorOccurrenceResponse> occurrences;
 
-    private ErrorClusterWithOccurrencesResponse() {};
+    private ErrorClusterWithOccurrencesResponse() {
+    };
 
-    public static ErrorClusterWithOccurrencesResponse of(ErrorCluster errorCluster, List<ErrorOccurrenceResponse> occurrences) {
+    public static ErrorClusterWithOccurrencesResponse of(ErrorCluster errorCluster,
+            List<ErrorOccurrenceResponse> occurrences) {
         ErrorClusterWithOccurrencesResponse reponse = new ErrorClusterWithOccurrencesResponse();
         reponse.cluster = ErrorClusterResponse.from(errorCluster);
         reponse.occurrences = occurrences;
         return reponse;
     }
 
-    public ErrorClusterResponse getCluster() { return cluster; }
-    public List<ErrorOccurrenceResponse> getOccurrences() { return occurrences; }
-    
+    public ErrorClusterResponse getCluster() {
+        return cluster;
+    }
+
+    public List<ErrorOccurrenceResponse> getOccurrences() {
+        return occurrences;
+    }
+
 }

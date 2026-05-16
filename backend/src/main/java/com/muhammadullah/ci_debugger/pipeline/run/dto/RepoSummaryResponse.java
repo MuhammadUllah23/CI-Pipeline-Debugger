@@ -14,7 +14,15 @@ public class RepoSummaryResponse {
         this.workflows = workflows;
     }
 
-    public String getOwner() { return owner; }
-    public String getRepo() { return repo; }
-    public List<WorkflowSummaryResponse> getWorkflows() { return workflows; }
+    public String getOwner() {
+        return owner;
+    }
+
+    public String getRepo() {
+        return repo;
+    }
+
+    public List<WorkflowSummaryResponse> getWorkflows() {
+        return workflows;
+    }
 }

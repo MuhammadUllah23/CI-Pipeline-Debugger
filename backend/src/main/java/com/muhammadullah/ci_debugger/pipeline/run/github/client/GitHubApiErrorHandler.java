@@ -14,7 +14,8 @@ public final class GitHubApiErrorHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GitHubApiErrorHandler.class);
 
-    private GitHubApiErrorHandler() {}
+    private GitHubApiErrorHandler() {
+    }
 
     /**
      * Executes a GitHub API call and maps provider-level exceptions to
@@ -26,8 +27,10 @@ public final class GitHubApiErrorHandler {
      * @param repo    the repository name, included in error details
      * @param runId   the workflow run ID, included in error details
      * @return the result of the API call
-     * @throws ServiceException with {@link ErrorCode#PROVIDER_API_CLIENT_ERROR} on 4xx
-     * @throws ServiceException with {@link ErrorCode#PROVIDER_API_UNAVAILABLE} on 5xx or timeout
+     * @throws ServiceException with {@link ErrorCode#PROVIDER_API_CLIENT_ERROR} on
+     *                          4xx
+     * @throws ServiceException with {@link ErrorCode#PROVIDER_API_UNAVAILABLE} on
+     *                          5xx or timeout
      */
     public static <T> T execute(Supplier<T> apiCall, String owner, String repo, String runId) {
         try {

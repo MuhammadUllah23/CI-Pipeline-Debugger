@@ -41,17 +41,55 @@ public class ProcessingJobResponse {
         return r;
     }
 
-    public UUID getId() { return id; }
-    public UUID getPipelineRunId() { return pipelineRunId; }
-    public ProcessingJobType getJobType() { return jobType; }
-    public ProcessingJobStatus getStatus() { return status; }
-    public int getAttempts() { return attempts; }
-    public int getMaxAttempts() { return maxAttempts; }
-    public String getLastError() { return lastError; }
-    public Instant getScheduledAt() { return scheduledAt; }
-    public Instant getNextRetryAt() { return nextRetryAt; }
-    public Instant getStartedAt() { return startedAt; }
-    public Instant getCompletedAt() { return completedAt; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
+    public UUID getId() {
+        return id;
+    }
+
+    public UUID getPipelineRunId() {
+        return pipelineRunId;
+    }
+
+    public ProcessingJobType getJobType() {
+        return jobType;
+    }
+
+    public ProcessingJobStatus getStatus() {
+        return status;
+    }
+
+    public int getAttempts() {
+        return attempts;
+    }
+
+    public int getMaxAttempts() {
+        return maxAttempts;
+    }
+
+    public String getLastError() {
+        return lastError;
+    }
+
+    public Instant getScheduledAt() {
+        return scheduledAt;
+    }
+
+    public Instant getNextRetryAt() {
+        return nextRetryAt;
+    }
+
+    public Instant getStartedAt() {
+        return startedAt;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
 }

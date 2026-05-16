@@ -12,42 +12,46 @@ import java.util.UUID;
 /**
  * Repository for {@link ProcessingJob} persistence operations.
  *
- * <p>All custom queries in this repository must include a {@code status} filter.
- * The {@code processing_job} table accumulates historical rows (COMPLETED, FAILED)
+ * <p>
+ * All custom queries in this repository must include a {@code status} filter.
+ * The {@code processing_job} table accumulates historical rows (COMPLETED,
+ * FAILED)
  * over time — querying without a status filter will return stale rows alongside
  * active ones, which is almost never the intended behaviour.
  */
 public interface ProcessingJobRepository extends JpaRepository<ProcessingJob, UUID> {
 
-    /**
-     * Returns all jobs that are eligible to be picked up by the scheduler.
-     *
-     * @param now the current timestamp to evaluate scheduling and retry windows against
-     * @return a list of eligible jobs, or an empty list if none are ready
-     */
-        @Query("""
-                SELECT job FROM ProcessingJob job
-                JOIN FETCH job.pipelineRun
-                WHERE job.status = 'PENDING'
-                AND job.scheduledAt <= :now
-                AND (job.nextRetryAt IS NULL OR job.nextRetryAt <= :now)
-                """)
-        List<ProcessingJob> findEligibleJobs(@Param("now") Instant now);
-
+        /**
+         * Returns all jobs that are eligible to be picked up by the scheduler.
+         *
+         * @param now
+         *                    the current timestamp to evaluate scheduling and retry
+         *                    windows
+         *                    against
+         * @return a list of eligible jobs, or an empty list if none are ready
+         */
+        // CHECKSTYLE.SUPPRESS: IndentationCheck
+    @Query("""
+        SELECT job FROM ProcessingJob job
+        JOIN FETCH job.pipelineRun
+        WHERE job.status = 'PENDING'
+        AND job.scheduledAt <= :now
+        AND (job.nextRetryAt IS NULL OR job.nextRetryAt <= :now)
+            """)
+    List<ProcessingJob> findEligibleJobs(@Param("now") Instant now);
 
         /**
          * Finds any active or completed job for the given run and type.
          * Used to prevent duplicate enqueues for runs that have already
          * been processed successfully.
          */
-        @Query("""
-                SELECT job FROM ProcessingJob job
-                WHERE job.pipelineRun.id = :pipelineRunId
-                AND job.jobType = :jobType
-                AND job.status IN ('PENDING', 'IN_PROGRESS', 'COMPLETED')
-                """)
-        Optional<ProcessingJob> findNonFailedJobByRunIdAndType(
-                @Param("pipelineRunId") UUID pipelineRunId,
-                @Param("jobType") ProcessingJobType jobType
-        );
+    @Query("""
+        SELECT job FROM ProcessingJob job
+        WHERE job.pipelineRun.id = :pipelineRunId
+        AND job.jobType = :jobType
+        AND job.status IN ('PENDING', 'IN_PROGRESS', 'COMPLETED')
+            """)
+    Optional<ProcessingJob> findNonFailedJobByRunIdAndType(
+            @Param("pipelineRunId") UUID pipelineRunId,
+            @Param("jobType") ProcessingJobType jobType);
 }
