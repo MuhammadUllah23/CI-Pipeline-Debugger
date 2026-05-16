@@ -1,7 +1,19 @@
 package com.muhammadullah.ci_debugger.pipeline.job;
 
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRun;
-import jakarta.persistence.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -9,12 +21,11 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(
-    name = "processing_job"
-    // Note: a partial unique constraint on (pipeline_run_id, job_type)
-    // WHERE status IN ('PENDING', 'IN_PROGRESS') is enforced at the database
-    // level via V9__add_active_job_unique_constraint.sql — JPA does not support
-    // partial unique constraints so it cannot be expressed here.
+@Table(name = "processing_job"
+// Note: a partial unique constraint on (pipeline_run_id, job_type)
+// WHERE status IN ('PENDING', 'IN_PROGRESS') is enforced at the database
+// level via V9__add_active_job_unique_constraint.sql — JPA does not support
+// partial unique constraints so it cannot be expressed here.
 )
 public class ProcessingJob {
 
@@ -64,7 +75,8 @@ public class ProcessingJob {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    protected ProcessingJob() {}
+    protected ProcessingJob() {
+    }
 
     public ProcessingJob(PipelineRun pipelineRun, ProcessingJobType jobType) {
         this.pipelineRun = pipelineRun;
@@ -104,9 +116,9 @@ public class ProcessingJob {
      * the provided retry time. Otherwise the job is permanently marked as
      * {@link ProcessingJobStatus#FAILED}.
      *
-     * @param error        the error message to record in {@code lastError}
-     * @param nextRetryAt  the earliest time the job should be retried;
-     *                     ignored if all attempts are exhausted
+     * @param error       the error message to record in {@code lastError}
+     * @param nextRetryAt the earliest time the job should be retried;
+     *                    ignored if all attempts are exhausted
      */
     public void markFailed(String error, Instant nextRetryAt) {
         this.lastError = error;
@@ -140,17 +152,55 @@ public class ProcessingJob {
         this.status = ProcessingJobStatus.FAILED;
     }
 
-    public UUID getId() { return id; }
-    public PipelineRun getPipelineRun() { return pipelineRun; }
-    public ProcessingJobType getJobType() { return jobType; }
-    public ProcessingJobStatus getStatus() { return status; }
-    public int getAttempts() { return attempts; }
-    public int getMaxAttempts() { return maxAttempts; }
-    public String getLastError() { return lastError; }
-    public Instant getScheduledAt() { return scheduledAt; }
-    public Instant getNextRetryAt() { return nextRetryAt; }
-    public Instant getStartedAt() { return startedAt; }
-    public Instant getCompletedAt() { return completedAt; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
+    public UUID getId() {
+        return id;
+    }
+
+    public PipelineRun getPipelineRun() {
+        return pipelineRun;
+    }
+
+    public ProcessingJobType getJobType() {
+        return jobType;
+    }
+
+    public ProcessingJobStatus getStatus() {
+        return status;
+    }
+
+    public int getAttempts() {
+        return attempts;
+    }
+
+    public int getMaxAttempts() {
+        return maxAttempts;
+    }
+
+    public String getLastError() {
+        return lastError;
+    }
+
+    public Instant getScheduledAt() {
+        return scheduledAt;
+    }
+
+    public Instant getNextRetryAt() {
+        return nextRetryAt;
+    }
+
+    public Instant getStartedAt() {
+        return startedAt;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
 }

@@ -25,19 +25,19 @@ public class PipelineRunService {
     private static final Logger log = LoggerFactory.getLogger(PipelineRunService.class);
 
     private static final int REPO_PAGE_SIZE = 20;
-    
+
     private final PipelineRunRepository repository;
 
     public PipelineRunService(PipelineRunRepository repository) {
         this.repository = repository;
     }
 
-
     /**
      * Creates or updates a pipeline run identified by
      * {@code (provider, owner, repo, providerRunId)}.
      *
-     * <p>Safe to call multiple times for the same run — designed to handle
+     * <p>
+     * Safe to call multiple times for the same run — designed to handle
      * successive GitHub webhooks ({@code requested}, {@code in_progress},
      * {@code completed}) for the same workflow run.
      *
@@ -47,7 +47,7 @@ public class PipelineRunService {
      *                          the provider is unrecognised
      * @throws ServiceException with {@link ErrorCode#DB_UPSERT_FAILED} if an
      *                          unexpected database error occurs
-     */    
+     */
     @Transactional
     public PipelineRunResponse upsert(PipelineRunUpsertRequest req) {
         PipelineRunProvider provider = normalizeProvider(req.getProvider(), req.getProviderRunId());
@@ -59,14 +59,13 @@ public class PipelineRunService {
 
         try {
             PipelineRun run = repository.findByProviderAndOwnerAndRepoAndProviderRunId(
-                            provider, owner, repo, req.getProviderRunId()
-                    )
+                    provider, owner, repo, req.getProviderRunId())
                     .map(existing -> applyUpdate(existing, req, status, conclusion))
                     .orElseGet(() -> createNew(req, provider, owner, repo, status, conclusion));
 
             return PipelineRunResponse.from(run);
         } catch (ServiceException e) {
-            throw e; 
+            throw e;
         } catch (Exception e) {
             throw ServiceException.of(ErrorCode.DB_UPSERT_FAILED)
                     .addDetail("provider", provider)
@@ -77,7 +76,7 @@ public class PipelineRunService {
         }
     }
 
-        /**
+    /**
      * Returns all repos grouped by owner → repo → workflowName, with the
      * 5 most recent runs per workflow.
      *
@@ -91,8 +90,7 @@ public class PipelineRunService {
                 .collect(java.util.stream.Collectors.groupingBy(
                         r -> r.getOwner() + "/" + r.getRepo(),
                         java.util.LinkedHashMap::new,
-                        java.util.stream.Collectors.toList()
-                ))
+                        java.util.stream.Collectors.toList()))
                 .entrySet().stream()
                 .map(entry -> {
                     List<PipelineRun> repoRuns = entry.getValue();
@@ -103,15 +101,13 @@ public class PipelineRunService {
                             .collect(java.util.stream.Collectors.groupingBy(
                                     r -> r.getWorkflowName() != null ? r.getWorkflowName() : "",
                                     java.util.LinkedHashMap::new,
-                                    java.util.stream.Collectors.toList()
-                            ))
+                                    java.util.stream.Collectors.toList()))
                             .entrySet().stream()
                             .map(wEntry -> new WorkflowSummaryResponse(
                                     wEntry.getKey(),
                                     wEntry.getValue().stream()
                                             .map(RunSummaryResponse::from)
-                                            .toList()
-                            ))
+                                            .toList()))
                             .toList();
 
                     return new RepoSummaryResponse(owner, repo, workflows);
@@ -123,9 +119,9 @@ public class PipelineRunService {
      * Returns a paginated list of runs for a specific repo, sorted by
      * {@code createdAt DESC}.
      *
-     * @param owner    the repository owner
-     * @param repo     the repository name
-     * @param page     zero-based page number
+     * @param owner the repository owner
+     * @param repo  the repository name
+     * @param page  zero-based page number
      * @return a page of run summaries for the given repo
      */
     @Transactional(readOnly = true)
@@ -159,8 +155,7 @@ public class PipelineRunService {
             String owner,
             String repo,
             PipelineRunStatus status,
-            PipelineRunConclusion conclusion
-    ) {
+            PipelineRunConclusion conclusion) {
         PipelineRun run = new PipelineRun(provider, owner, repo, req.getProviderRunId(), status);
 
         applyMetadata(run, req);
@@ -181,8 +176,7 @@ public class PipelineRunService {
             PipelineRun existing,
             PipelineRunUpsertRequest req,
             PipelineRunStatus incomingStatus,
-            PipelineRunConclusion incomingConclusion
-    ) {
+            PipelineRunConclusion incomingConclusion) {
         existing.setStatus(incomingStatus);
 
         if (req.getStartedAt() != null && existing.getStartedAt() == null) {
@@ -194,16 +188,22 @@ public class PipelineRunService {
 
         PipelineRun savedPipelineRun = repository.save(existing);
         log.info("Updated pipeline run {} for {}/{} providerRunId={} status={}",
-                savedPipelineRun.getId(), existing.getOwner(), existing.getRepo(), existing.getProviderRunId(), incomingStatus);
-
+                savedPipelineRun.getId(), existing.getOwner(), existing.getRepo(), existing.getProviderRunId(),
+                incomingStatus);
 
         return savedPipelineRun;
     }
 
     private void applyMetadata(PipelineRun run, PipelineRunUpsertRequest req) {
-        if (req.getWorkflowName() != null && run.getWorkflowName() == null) run.setWorkflowName(req.getWorkflowName());
-        if (req.getHeadSha() != null && run.getHeadSha() == null) run.setHeadSha(req.getHeadSha());
-        if (req.getBranch() != null && run.getBranch() == null) run.setBranch(req.getBranch());
+        if (req.getWorkflowName() != null && run.getWorkflowName() == null) {
+            run.setWorkflowName(req.getWorkflowName());
+        }
+        if (req.getHeadSha() != null && run.getHeadSha() == null) {
+            run.setHeadSha(req.getHeadSha());
+        }
+        if (req.getBranch() != null && run.getBranch() == null) {
+            run.setBranch(req.getBranch());
+        }
     }
 
     private void applyCompletion(PipelineRun run, PipelineRunUpsertRequest req, PipelineRunConclusion conclusion) {
@@ -214,12 +214,16 @@ public class PipelineRunService {
     }
 
     private PipelineRunStatus coerceStatus(String raw) {
-        if (raw == null) return PipelineRunStatus.UNKNOWN;
+        if (raw == null) {
+            return PipelineRunStatus.UNKNOWN;
+        }
 
         String trimmed = raw.trim();
         PipelineRunStatus mapped = PipelineRunValueMapper.toStatus(trimmed);
 
-        if (mapped != PipelineRunStatus.UNKNOWN) return mapped;
+        if (mapped != PipelineRunStatus.UNKNOWN) {
+            return mapped;
+        }
 
         try {
             return PipelineRunStatus.valueOf(trimmed.toUpperCase());
@@ -241,10 +245,13 @@ public class PipelineRunService {
     }
 
     private long coerceDuration(Long provided, Instant startedAt, Instant completedAt) {
-        if (provided != null && provided >= 0) return provided;
-        if (startedAt == null || completedAt == null) return 0;
+        if (provided != null && provided >= 0) {
+            return provided;
+        }
+        if (startedAt == null || completedAt == null) {
+            return 0;
+        }
         long ms = completedAt.toEpochMilli() - startedAt.toEpochMilli();
         return Math.max(0, ms);
     }
 }
-

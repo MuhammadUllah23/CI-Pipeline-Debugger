@@ -26,7 +26,6 @@ public interface PipelineStepRepository extends JpaRepository<PipelineStep, UUID
      */
     List<PipelineStep> findByPipelineRunIdAndConclusionIn(
             UUID pipelineRunId,
-            Collection<PipelineRunConclusion> conclusions
-    );
+            Collection<PipelineRunConclusion> conclusions);
 
 }

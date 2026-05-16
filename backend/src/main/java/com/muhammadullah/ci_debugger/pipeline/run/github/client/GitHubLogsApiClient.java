@@ -35,7 +35,8 @@ public class GitHubLogsApiClient {
      * Fetches the log zip for a workflow run from the GitHub API and extracts
      * error lines per job.
      *
-     * <p>Only files matching the pattern {@code {index}_{jobName}.txt} at the
+     * <p>
+     * Only files matching the pattern {@code {index}_{jobName}.txt} at the
      * root level of the zip are processed — system-level files like
      * {@code build/system.txt} are ignored. Error lines are identified by the
      * prefixes {@code [ERROR]} and {@code ##[error]}.
@@ -59,8 +60,7 @@ public class GitHubLogsApiClient {
                         .uri(LOGS_PATH, owner, repo, runId)
                         .retrieve()
                         .body(byte[].class),
-                owner, repo, runId
-        );
+                owner, repo, runId);
 
         if (zipBytes == null || zipBytes.length == 0) {
             log.warn("GitHub returned empty log zip for {}/{} runId={}", owner, repo, runId);
@@ -91,8 +91,9 @@ public class GitHubLogsApiClient {
             throws IOException {
         Map<String, List<String>> errorLinesByJob = new HashMap<>();
 
-        // ByteArrayInputStream wraps the byte array so it can be read as a stream. 
-        // ZipInputStream wraps that so we can iterate through the zip entries one by one.
+        // ByteArrayInputStream wraps the byte array so it can be read as a stream.
+        // ZipInputStream wraps that so we can iterate through the zip entries one by
+        // one.
 
         try (ZipInputStream zipInputStream = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
             ZipEntry entry;

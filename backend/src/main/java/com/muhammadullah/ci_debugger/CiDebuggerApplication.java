@@ -9,9 +9,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @ConditionalOnProperty(name = "scheduling.enabled", matchIfMissing = true)
 public class CiDebuggerApplication {
-
-	public static void main(String[] args) {
-		SpringApplication.run(CiDebuggerApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(CiDebuggerApplication.class, args);
+    }
 }

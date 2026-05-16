@@ -16,7 +16,7 @@ public enum ErrorCode {
     PROVIDER_STATUS_UNKNOWN("Cannot map unknown status from provider", HttpStatus.UNPROCESSABLE_ENTITY),
     PROVIDER_API_CLIENT_ERROR("Invalid request to provider API", HttpStatus.BAD_REQUEST),
     PROVIDER_API_UNAVAILABLE("Provider API is unavailable or timed out", HttpStatus.SERVICE_UNAVAILABLE),
-    
+
     // ── Pipeline runs ────────────────────────────────────────────────────────
     PIPELINE_RUN_NOT_FOUND("Pipeline run not found", HttpStatus.NOT_FOUND),
     PIPELINE_STEP_NOT_FOUND("Pipeline step not found", HttpStatus.NOT_FOUND),
@@ -30,7 +30,6 @@ public enum ErrorCode {
     DB_RECORD_NOT_FOUND("Record not found", HttpStatus.NOT_FOUND),
     DB_UPSERT_CONFLICT("Upsert conflict on record", HttpStatus.CONFLICT),
 
-
     ;
 
     private final String message;
@@ -38,9 +37,14 @@ public enum ErrorCode {
 
     ErrorCode(String message, HttpStatus status) {
         this.message = message;
-        this.status  = status;
+        this.status = status;
     }
 
-    public String getMessage()   { return message; }
-    public HttpStatus getStatus() { return status; }
+    public String getMessage() {
+        return message;
+    }
+
+    public HttpStatus getStatus() {
+        return status;
+    }
 }

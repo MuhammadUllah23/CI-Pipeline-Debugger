@@ -2,7 +2,17 @@ package com.muhammadullah.ci_debugger.pipeline.error;
 
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRun;
 import com.muhammadullah.ci_debugger.pipeline.step.PipelineStep;
-import jakarta.persistence.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
@@ -10,8 +20,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "error_occurrence")
-// Note: a partial unique constraint on (error_cluster_id, pipeline_run_id, pipeline_step_id)
-// WHERE pipeline_step_id IS NOT NULL is enforced at the database level via V4 
+// Note: a partial unique constraint on (error_cluster_id, pipeline_run_id,
+// pipeline_step_id)
+// WHERE pipeline_step_id IS NOT NULL is enforced at the database level via V4
 public class ErrorOccurrence {
 
     @Id
@@ -41,7 +52,8 @@ public class ErrorOccurrence {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    protected ErrorOccurrence() {}
+    protected ErrorOccurrence() {
+    }
 
     public ErrorOccurrence(ErrorCluster errorCluster, PipelineRun pipelineRun, PipelineStep pipelineStep) {
         this.errorCluster = errorCluster;
@@ -49,13 +61,33 @@ public class ErrorOccurrence {
         this.pipelineStep = pipelineStep;
     }
 
-    public UUID getId() { return id; }
-    public ErrorCluster getErrorCluster() { return errorCluster; }
-    public PipelineRun getPipelineRun() { return pipelineRun; }
-    public PipelineStep getPipelineStep() { return pipelineStep; }
-    public Integer getLineNumber() { return lineNumber; }
-    public String getSnippet() { return snippet; }
-    public Instant getCreatedAt() { return createdAt; }
+    public UUID getId() {
+        return id;
+    }
+
+    public ErrorCluster getErrorCluster() {
+        return errorCluster;
+    }
+
+    public PipelineRun getPipelineRun() {
+        return pipelineRun;
+    }
+
+    public PipelineStep getPipelineStep() {
+        return pipelineStep;
+    }
+
+    public Integer getLineNumber() {
+        return lineNumber;
+    }
+
+    public String getSnippet() {
+        return snippet;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 
     public void setSnippet(String snippet) {
         this.snippet = snippet;

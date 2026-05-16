@@ -9,13 +9,16 @@ import java.util.List;
 
 public final class GitHubStepsApiMapper {
 
-    private GitHubStepsApiMapper() {}
+    private GitHubStepsApiMapper() {
+    }
 
     /**
-     * Maps a GitHub Steps API response to a flat list of {@link PipelineStepSaveRequest}s.
+     * Maps a GitHub Steps API response to a flat list of
+     * {@link PipelineStepSaveRequest}s.
      *
      * Each job in the response is flattened into its individual steps, with the
-     * job name carried onto each step so the {@code (pipeline_run_id, job_name, step_index)}
+     * job name carried onto each step so the
+     * {@code (pipeline_run_id, job_name, step_index)}
      * unique constraint can be satisfied.
      *
      * @param response the GitHub Steps API response to map

@@ -42,17 +42,55 @@ public class RunSummaryResponse {
         return r;
     }
 
-    public UUID getId() { return id; }
-    public PipelineRunProvider getProvider() { return provider; }
-    public String getOwner() { return owner; }
-    public String getRepo() { return repo; }
-    public String getWorkflowName() { return workflowName; }
-    public PipelineRunStatus getStatus() { return status; }
-    public PipelineRunConclusion getConclusion() { return conclusion; }
-    public String getBranch() { return branch; }
-    public String getHeadSha() { return headSha; }
-    public Instant getStartedAt() { return startedAt; }
-    public Instant getCompletedAt() { return completedAt; }
-    public Long getTotalDurationMs() { return totalDurationMs; }
-    public Instant getCreatedAt() { return createdAt; }
+    public UUID getId() {
+        return id;
+    }
+
+    public PipelineRunProvider getProvider() {
+        return provider;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public String getRepo() {
+        return repo;
+    }
+
+    public String getWorkflowName() {
+        return workflowName;
+    }
+
+    public PipelineRunStatus getStatus() {
+        return status;
+    }
+
+    public PipelineRunConclusion getConclusion() {
+        return conclusion;
+    }
+
+    public String getBranch() {
+        return branch;
+    }
+
+    public String getHeadSha() {
+        return headSha;
+    }
+
+    public Instant getStartedAt() {
+        return startedAt;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
+    }
+
+    public Long getTotalDurationMs() {
+        return totalDurationMs;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 }

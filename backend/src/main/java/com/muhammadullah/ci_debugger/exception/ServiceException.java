@@ -26,6 +26,11 @@ public class ServiceException extends RuntimeException {
         return this;
     }
 
-    public ErrorCode getErrorCode()       { return errorCode; }
-    public Map<String, Object> getDetails() { return details; }
+    public ErrorCode getErrorCode() {
+        return errorCode;
+    }
+
+    public Map<String, Object> getDetails() {
+        return details;
+    }
 }

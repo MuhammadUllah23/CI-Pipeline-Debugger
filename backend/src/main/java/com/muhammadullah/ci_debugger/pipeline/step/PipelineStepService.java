@@ -26,8 +26,7 @@ public class PipelineStepService {
 
     public PipelineStepService(
             PipelineStepRepository stepRepository,
-            PipelineRunRepository runRepository
-    ) {
+            PipelineRunRepository runRepository) {
         this.stepRepository = stepRepository;
         this.runRepository = runRepository;
     }
@@ -75,7 +74,8 @@ public class PipelineStepService {
 
     /**
      * Returns all steps for the given pipeline run whose conclusion indicates
-     * a failure. Used by job handlers to determine which steps need error clustering.
+     * a failure. Used by job handlers to determine which steps need error
+     * clustering.
      *
      * @param pipelineRunId the ID of the pipeline run to fetch failed steps for
      * @return all failed steps for the run, or an empty list if none exist
@@ -108,22 +108,19 @@ public class PipelineStepService {
                 .toList();
     }
 
-    
     private PipelineStep buildStep(PipelineRun run, PipelineStepSaveRequest request) {
         PipelineStep step = new PipelineStep(
                 run,
                 request.getJobName(),
                 request.getStepName(),
-                request.getStepIndex()
-        );
+                request.getStepIndex());
 
         step.applyCompletion(
                 request.getStatus(),
                 request.getConclusion(),
                 request.getStartedAt(),
                 request.getCompletedAt(),
-                request.getDurationMs()
-        );
+                request.getDurationMs());
 
         return step;
     }

@@ -26,15 +26,14 @@ public class PipelineRunDevController {
 
     @PostMapping("/seed")
     public PipelineRun seed() {
-        String providerRunId = "123456789"; 
+        String providerRunId = "123456789";
 
         PipelineRun run = new PipelineRun(
                 PipelineRunProvider.GITHUB,
                 "owner",
                 "ci-pipeline-debugger",
                 providerRunId,
-                PipelineRunStatus.QUEUED
-        );
+                PipelineRunStatus.QUEUED);
 
         run.setWorkflowName("CI Pipeline Debugger - Seed");
         run.setBranch("main");

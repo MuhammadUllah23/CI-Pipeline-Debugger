@@ -2,7 +2,8 @@ package com.muhammadullah.ci_debugger.pipeline.run.github;
 
 public final class GitHubWebhookConstants {
 
-    private GitHubWebhookConstants() {}
+    private GitHubWebhookConstants() {
+    }
 
     public static final String EVENT_WORKFLOW_RUN = "workflow_run";
     public static final String ACTION_COMPLETED = "completed";

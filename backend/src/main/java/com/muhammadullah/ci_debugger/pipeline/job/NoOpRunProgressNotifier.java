@@ -13,11 +13,14 @@ import java.util.UUID;
 public class NoOpRunProgressNotifier implements RunProgressNotifier {
 
     @Override
-    public void onJobStarted(UUID pipelineRunId, ProcessingJobType jobType) {}
+    public void onJobStarted(UUID pipelineRunId, ProcessingJobType jobType) {
+    }
 
     @Override
-    public void onJobCompleted(UUID pipelineRunId, ProcessingJobType jobType) {}
+    public void onJobCompleted(UUID pipelineRunId, ProcessingJobType jobType) {
+    }
 
     @Override
-    public void onJobFailed(UUID pipelineRunId, ProcessingJobType jobType, String error, boolean willRetry) {}
+    public void onJobFailed(UUID pipelineRunId, ProcessingJobType jobType, String error, boolean willRetry) {
+    }
 }

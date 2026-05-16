@@ -1,6 +1,5 @@
 package com.muhammadullah.ci_debugger.pipeline.run;
 
-import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -9,16 +8,23 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import com.muhammadullah.ci_debugger.pipeline.pullrequest.PullRequest;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+
 @Entity
-@Table(
-    name = "pipeline_run",
-    uniqueConstraints = {
-        @UniqueConstraint(
-            name = "uq_pipeline_run",
-            columnNames = {"provider", "owner", "repo", "provider_run_id"}
-        )
-    }
-)
+@Table(name = "pipeline_run", uniqueConstraints = {
+    @UniqueConstraint(name = "uq_pipeline_run", columnNames = { "provider", "owner", "repo", "provider_run_id" })
+})
 public class PipelineRun {
 
     @Id
@@ -80,7 +86,8 @@ public class PipelineRun {
     protected PipelineRun() {
     }
 
-    public PipelineRun(PipelineRunProvider provider, String owner, String repo, String providerRunId, PipelineRunStatus status) {
+    public PipelineRun(PipelineRunProvider provider, String owner, String repo, String providerRunId,
+            PipelineRunStatus status) {
         this.provider = provider;
         this.owner = owner;
         this.repo = repo;
@@ -88,32 +95,93 @@ public class PipelineRun {
         this.status = (status == null) ? PipelineRunStatus.UNKNOWN : status;
     }
 
-    public UUID getId() { return id; }
-    public PipelineRunProvider getProvider() { return provider; }
-    public String getOwner() { return owner; }
-    public String getRepo() { return repo; }
-    public String getProviderRunId() { return providerRunId; }
-    public String getWorkflowName() { return workflowName; }
-    public PipelineRunStatus getStatus() { return status; }
-    public PipelineRunConclusion getConclusion() { return conclusion; }
-    public String getHeadSha() { return headSha; }
-    public String getBranch() { return branch; }
-    public Instant getStartedAt() { return startedAt; }
-    public Instant getCompletedAt() { return completedAt; }
-    public Long getTotalDurationMs() { return totalDurationMs; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
-    public PullRequest getPullRequest() { return pullRequest; }
+    public UUID getId() {
+        return id;
+    }
 
+    public PipelineRunProvider getProvider() {
+        return provider;
+    }
 
-    public void setWorkflowName(String workflowName) { this.workflowName = workflowName; }
-    public void setHeadSha(String headSha) { this.headSha = headSha; }
-    public void setBranch(String branch) { this.branch = branch; }
-    public void setStartedAt(Instant startedAt) { this.startedAt = startedAt; }
+    public String getOwner() {
+        return owner;
+    }
+
+    public String getRepo() {
+        return repo;
+    }
+
+    public String getProviderRunId() {
+        return providerRunId;
+    }
+
+    public String getWorkflowName() {
+        return workflowName;
+    }
+
+    public PipelineRunStatus getStatus() {
+        return status;
+    }
+
+    public PipelineRunConclusion getConclusion() {
+        return conclusion;
+    }
+
+    public String getHeadSha() {
+        return headSha;
+    }
+
+    public String getBranch() {
+        return branch;
+    }
+
+    public Instant getStartedAt() {
+        return startedAt;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
+    }
+
+    public Long getTotalDurationMs() {
+        return totalDurationMs;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public PullRequest getPullRequest() {
+        return pullRequest;
+    }
+
+    public void setWorkflowName(String workflowName) {
+        this.workflowName = workflowName;
+    }
+
+    public void setHeadSha(String headSha) {
+        this.headSha = headSha;
+    }
+
+    public void setBranch(String branch) {
+        this.branch = branch;
+    }
+
+    public void setStartedAt(Instant startedAt) {
+        this.startedAt = startedAt;
+    }
+
     public void setStatus(PipelineRunStatus status) {
         this.status = (status == null) ? PipelineRunStatus.UNKNOWN : status;
     }
-    public void setPullRequest(PullRequest pullRequest) { this.pullRequest = pullRequest; }
+
+    public void setPullRequest(PullRequest pullRequest) {
+        this.pullRequest = pullRequest;
+    }
 
     // --- lifecycle methods ---
 

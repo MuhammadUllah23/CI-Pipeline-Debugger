@@ -17,15 +17,9 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(
-    name="pull_request",
-    uniqueConstraints = {
-        @UniqueConstraint(
-            name = "uq_pull_request",
-            columnNames = {"provider", "owner", "repo", "pr_number"}
-        )
-    }
-)
+@Table(name = "pull_request", uniqueConstraints = {
+    @UniqueConstraint(name = "uq_pull_request", columnNames = { "provider", "owner", "repo", "pr_number" })
+})
 public class PullRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -68,7 +62,8 @@ public class PullRequest {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    protected PullRequest() {}
+    protected PullRequest() {
+    }
 
     public PullRequest(String provider, String owner, String repo, int prNumber) {
         this.provider = provider;
@@ -91,8 +86,7 @@ public class PullRequest {
             String headSha,
             String headBranch,
             String prStateRaw,
-            PullRequestState prState
-    ) {
+            PullRequestState prState) {
         this.title = title;
         this.headSha = headSha;
         this.headBranch = headBranch;
@@ -100,16 +94,51 @@ public class PullRequest {
         this.prState = prState;
     }
 
-    public UUID getId() { return id; }
-    public String getProvider() { return provider; }
-    public String getOwner() { return owner; }
-    public String getRepo() { return repo; }
-    public int getPrNumber() { return prNumber; }
-    public String getTitle() { return title; }
-    public String getHeadSha() { return headSha; }
-    public String getHeadBranch() { return headBranch; }
-    public String getPrStateRaw() { return prStateRaw; }
-    public PullRequestState getPrState() { return prState; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
+    public UUID getId() {
+        return id;
+    }
+
+    public String getProvider() {
+        return provider;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public String getRepo() {
+        return repo;
+    }
+
+    public int getPrNumber() {
+        return prNumber;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getHeadSha() {
+        return headSha;
+    }
+
+    public String getHeadBranch() {
+        return headBranch;
+    }
+
+    public String getPrStateRaw() {
+        return prStateRaw;
+    }
+
+    public PullRequestState getPrState() {
+        return prState;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
 }

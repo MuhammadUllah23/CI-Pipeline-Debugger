@@ -4,7 +4,8 @@ import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunUpsertRequest;
 
 public final class GitHubWebhookMapper {
 
-    private GitHubWebhookMapper() {}
+    private GitHubWebhookMapper() {
+    }
 
     public static PipelineRunUpsertRequest toUpsertRequest(GitHubWebhookPayload payload) {
         GitHubWebhookPayload.WorkflowRun run = payload.getWorkflowRun();

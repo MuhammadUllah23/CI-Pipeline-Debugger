@@ -4,7 +4,7 @@ import java.util.UUID;
 
 /**
  * Notifies interested parties of pipeline run progress events triggered
- * by job processing. 
+ * by job processing.
  */
 public interface RunProgressNotifier {
 
