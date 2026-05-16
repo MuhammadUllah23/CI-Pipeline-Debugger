@@ -11,6 +11,18 @@
     <module name="FileTabCharacter"/>
     <module name="NewlineAtEndOfFile"/>
 
+    <!-- Trailing whitespace -->
+    <module name="RegexpSingleline">
+        <property name="format" value="\s+$"/>
+        <property name="message" value="Line has trailing whitespace."/>
+    </module>
+
+    <!-- Line length -->
+    <module name="LineLength">
+        <property name="max" value="120"/>
+        <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
+    </module>
+
     <module name="TreeWalker">
 
         <!-- Naming conventions -->
@@ -31,7 +43,6 @@
         <!-- Whitespace -->
         <module name="WhitespaceAround"/>
         <module name="WhitespaceAfter"/>
-        <module name="NoWhitespaceAtEndOfLine"/>
 
         <!-- Indentation -->
         <module name="Indentation">
@@ -55,12 +66,6 @@
         <module name="StringLiteralEquality"/>
         <module name="EqualsHashCode"/>
         <module name="MissingSwitchDefault"/>
-
-        <!-- Line length -->
-        <module name="LineLength">
-            <property name="max" value="120"/>
-            <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
-        </module>
 
     </module>
 </module>
