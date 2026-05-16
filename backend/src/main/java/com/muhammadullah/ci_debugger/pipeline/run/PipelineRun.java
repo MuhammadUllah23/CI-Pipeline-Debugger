@@ -7,6 +7,8 @@ import java.util.UUID;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.muhammadullah.ci_debugger.pipeline.pullrequest.PullRequest;
+
 @Entity
 @Table(
     name = "pipeline_run",
@@ -71,6 +73,10 @@ public class PipelineRun {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pr_id")
+    private PullRequest pullRequest;
+
     protected PipelineRun() {
     }
 
@@ -97,6 +103,7 @@ public class PipelineRun {
     public Long getTotalDurationMs() { return totalDurationMs; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public PullRequest getPullRequest() { return pullRequest; }
 
 
     public void setWorkflowName(String workflowName) { this.workflowName = workflowName; }
@@ -106,6 +113,8 @@ public class PipelineRun {
     public void setStatus(PipelineRunStatus status) {
         this.status = (status == null) ? PipelineRunStatus.UNKNOWN : status;
     }
+    public void setPullRequest(PullRequest pullRequest) { this.pullRequest = pullRequest; }
+
     // --- lifecycle methods ---
 
     public void markStarted(Instant startedAt) {
