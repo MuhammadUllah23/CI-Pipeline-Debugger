@@ -1,15 +1,12 @@
-name: CI
+name: Test
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -21,6 +18,6 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Build with Maven
-        run: mvn clean compile
+      - name: Run tests
+        run: mvn test
         working-directory: backend
