@@ -2,7 +2,9 @@ package com.muhammadullah.ci_debugger.pipeline.run.github;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.Instant;
+import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GitHubWebhookPayload {
@@ -59,6 +61,9 @@ public class GitHubWebhookPayload {
         // completion timestamp
         @JsonProperty("updated_at")
         private Instant updatedAt;
+
+        @JsonProperty("pull_requests")
+        private List<PullRequestRef> pullRequests;
 
         public Long getId() {
             return id;
@@ -122,6 +127,28 @@ public class GitHubWebhookPayload {
 
         public void setUpdatedAt(Instant updatedAt) {
             this.updatedAt = updatedAt;
+        }
+
+        public List<PullRequestRef> getPullRequests() {
+            return pullRequests;
+        }
+
+        public void setPullRequests(List<PullRequestRef> pullRequests) {
+            this.pullRequests = pullRequests;
+        }
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public static class PullRequestRef {
+
+            private int number;
+
+            public int getNumber() {
+                return number;
+            }
+
+            public void setNumber(int number) {
+                this.number = number;
+            }
         }
     }
 
