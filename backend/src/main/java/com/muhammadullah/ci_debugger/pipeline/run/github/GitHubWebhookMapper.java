@@ -24,6 +24,10 @@ public final class GitHubWebhookMapper {
         req.setBranch(run.getHeadBranch());
         req.setStartedAt(run.getRunStartedAt());
 
+        if (run.getPullRequests() != null && !run.getPullRequests().isEmpty()) {
+            req.setPrNumber(run.getPullRequests().get(0).getNumber());
+        }
+
         if (GitHubWebhookConstants.ACTION_COMPLETED.equals(payload.getAction())) {
             req.setConclusion(run.getConclusion());
             req.setCompletedAt(run.getUpdatedAt());

@@ -204,6 +204,9 @@ public class PipelineRunService {
         if (req.getBranch() != null && run.getBranch() == null) {
             run.setBranch(req.getBranch());
         }
+        if (req.getPrNumber() != null && run.getPrNumber() == null) {
+            run.setPrNumber(req.getPrNumber());
+        }
     }
 
     private void applyCompletion(PipelineRun run, PipelineRunUpsertRequest req, PipelineRunConclusion conclusion) {

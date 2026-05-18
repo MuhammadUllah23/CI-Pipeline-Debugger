@@ -30,6 +30,8 @@ public class PipelineRunUpsertRequest {
     private Instant completedAt;
     private Long totalDurationMs;
 
+    private Integer prNumber;
+
     public String getProvider() {
         return provider;
     }
@@ -124,5 +126,13 @@ public class PipelineRunUpsertRequest {
 
     public void setTotalDurationMs(Long totalDurationMs) {
         this.totalDurationMs = totalDurationMs;
+    }
+
+    public Integer getPrNumber() {
+        return prNumber;
+    }
+
+    public void setPrNumber(Integer prNumber) {
+        this.prNumber = prNumber;
     }
 }
