@@ -9,6 +9,7 @@ import com.muhammadullah.ci_debugger.pipeline.pullrequest.github.client.GitHubPu
 import com.muhammadullah.ci_debugger.pipeline.pullrequest.github.client.GitHubPullRequestApiResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRun;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunProvider;
+import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunRepository;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Optional;
+import java.util.UUID;
+
 @ExtendWith(MockitoExtension.class)
 class GitHubFetchPrDetailsJobHandlerTest {
 
@@ -32,10 +36,14 @@ class GitHubFetchPrDetailsJobHandlerTest {
     @Mock
     private PullRequestRepository pullRequestRepository;
 
+    @Mock
+    private PipelineRunRepository pipelineRunRepository;
+
     @InjectMocks
     private GitHubFetchPrDetailsJobHandler handler;
 
     private PipelineRun pipelineRun;
+    private UUID pipelineRunId;
     private PullRequest pullRequest;
     private ProcessingJob job;
 
@@ -48,8 +56,10 @@ class GitHubFetchPrDetailsJobHandlerTest {
                 "owner",
                 "repo",
                 "123456789",
-                PipelineRunStatus.COMPLETED
-        );
+                PipelineRunStatus.COMPLETED);
+
+        pipelineRunId = UUID.randomUUID();
+        pipelineRun.setId(pipelineRunId);
         pipelineRun.setPullRequest(pullRequest);
         job = new ProcessingJob(pipelineRun, ProcessingJobType.GITHUB_FETCH_PR_DETAILS);
     }
@@ -66,6 +76,8 @@ class GitHubFetchPrDetailsJobHandlerTest {
         when(gitHubPullRequestApiClient.fetchPullRequest("owner", "repo", 42))
                 .thenReturn(response);
         when(pullRequestRepository.save(any(PullRequest.class))).thenReturn(pullRequest);
+        when(pipelineRunRepository.findById(pipelineRunId))
+                .thenReturn(Optional.of(pipelineRun));
 
         handler.handle(job);
 
@@ -78,6 +90,9 @@ class GitHubFetchPrDetailsJobHandlerTest {
     @Test
     void handlePrWithExistingDetailsSkipsApiCall() {
         pullRequest.applyDetails("Add feature", "abc123", "feature-branch", "open", PullRequestState.OPEN);
+
+        when(pipelineRunRepository.findById(pipelineRunId))
+                .thenReturn(Optional.of(pipelineRun));
 
         handler.handle(job);
 
@@ -92,6 +107,8 @@ class GitHubFetchPrDetailsJobHandlerTest {
         when(gitHubPullRequestApiClient.fetchPullRequest("owner", "repo", 42))
                 .thenReturn(response);
         when(pullRequestRepository.save(any(PullRequest.class))).thenReturn(pullRequest);
+        when(pipelineRunRepository.findById(pipelineRunId))
+                .thenReturn(Optional.of(pipelineRun));
 
         handler.handle(job);
 

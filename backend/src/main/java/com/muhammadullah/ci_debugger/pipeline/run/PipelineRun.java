@@ -159,6 +159,10 @@ public class PipelineRun {
         return pullRequest;
     }
 
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
     public void setWorkflowName(String workflowName) {
         this.workflowName = workflowName;
     }

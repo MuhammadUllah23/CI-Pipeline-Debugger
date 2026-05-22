@@ -1,5 +1,7 @@
 package com.muhammadullah.ci_debugger.pipeline.job.handler;
 
+import com.muhammadullah.ci_debugger.exception.ErrorCode;
+import com.muhammadullah.ci_debugger.exception.ServiceException;
 import com.muhammadullah.ci_debugger.pipeline.job.ProcessingJob;
 import com.muhammadullah.ci_debugger.pipeline.job.ProcessingJobType;
 import com.muhammadullah.ci_debugger.pipeline.pullrequest.PullRequest;
@@ -21,6 +23,7 @@ public class GitHubFetchPrDetailsJobHandler implements JobHandler {
 
     private final GitHubPullRequestApiClient gitHubPullRequestApiClient;
     private final PullRequestRepository pullRequestRepository;
+    private final PipelineRunRepository pipelineRunRepository;
 
     public GitHubFetchPrDetailsJobHandler(
             GitHubPullRequestApiClient gitHubPullRequestApiClient,
@@ -28,6 +31,7 @@ public class GitHubFetchPrDetailsJobHandler implements JobHandler {
             PipelineRunRepository pipelineRunRepository) {
         this.gitHubPullRequestApiClient = gitHubPullRequestApiClient;
         this.pullRequestRepository = pullRequestRepository;
+        this.pipelineRunRepository = pipelineRunRepository;
     }
 
     @Override
@@ -38,7 +42,9 @@ public class GitHubFetchPrDetailsJobHandler implements JobHandler {
     @Override
     @Transactional
     public void handle(ProcessingJob job) {
-        PipelineRun run = job.getPipelineRun();
+        PipelineRun run = pipelineRunRepository.findById(job.getPipelineRun().getId())
+                .orElseThrow(() -> ServiceException.of(ErrorCode.PIPELINE_RUN_NOT_FOUND)
+                        .addDetail("pipelineRunId", job.getPipelineRun().getId()));
         PullRequest pullRequest = run.getPullRequest();
 
         log.info("Fetching PR details for {}/{} prNumber={} pipelineRun={}",
