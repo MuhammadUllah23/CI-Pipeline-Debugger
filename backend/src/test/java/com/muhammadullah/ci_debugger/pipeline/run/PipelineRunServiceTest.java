@@ -70,7 +70,7 @@ class PipelineRunServiceTest {
     // ── upsert — create new ────────────────────────────────────────────────
 
     @Test
-    void upsert_newRun_createsAndReturnsResponse() {
+    void upsertNewRunCreatesAndReturnsResponse() {
         PipelineRunUpsertRequest req = buildRequest("queued");
         PipelineRun saved = buildRun("owner", "repo", "CI");
 
@@ -88,7 +88,7 @@ class PipelineRunServiceTest {
     }
 
     @Test
-    void upsert_newRun_appliesMetadataOnCreate() {
+    void upsertNewRunAppliesMetadataOnCreate() {
         PipelineRunUpsertRequest req = buildRequest("queued");
         PipelineRun saved = buildRun("owner", "repo", "CI");
 
@@ -104,7 +104,7 @@ class PipelineRunServiceTest {
     }
 
     @Test
-    void upsert_newRun_withCompletedAt_appliesCompletion() {
+    void upsertNewRunWithCompletedAtAppliesCompletion() {
         PipelineRunUpsertRequest req = buildRequest("completed");
         req.setConclusion("failure");
         req.setCompletedAt(Instant.now());
@@ -125,7 +125,7 @@ class PipelineRunServiceTest {
     // ── upsert — update existing ───────────────────────────────────────────
 
     @Test
-    void upsert_existingRun_updatesStatusAndReturnsResponse() {
+    void upsertExistingRunUpdatesStatusAndReturnsResponse() {
         PipelineRunUpsertRequest req = buildRequest("in_progress");
         PipelineRun existing = buildRun("owner", "repo", "CI");
 
@@ -140,7 +140,7 @@ class PipelineRunServiceTest {
     }
 
     @Test
-    void upsert_existingRun_doesNotOverwriteWorkflowName() {
+    void upsertExistingRunDoesNotOverwriteWorkflowName() {
         PipelineRunUpsertRequest req = buildRequest("in_progress");
         req.setWorkflowName("New Name");
 
@@ -157,7 +157,7 @@ class PipelineRunServiceTest {
     }
 
     @Test
-    void upsert_existingRun_doesNotOverwriteStartedAt() {
+    void upsertExistingRunDoesNotOverwriteStartedAt() {
         PipelineRunUpsertRequest req = buildRequest("in_progress");
         Instant originalStartedAt = Instant.now().minusSeconds(120);
         req.setStartedAt(Instant.now());
@@ -175,7 +175,7 @@ class PipelineRunServiceTest {
     }
 
     @Test
-    void upsert_existingRun_withCompletedAt_appliesCompletion() {
+    void upsertExistingRunWithCompletedAtAppliesCompletion() {
         PipelineRunUpsertRequest req = buildRequest("completed");
         req.setConclusion("success");
         req.setCompletedAt(Instant.now());
@@ -195,7 +195,7 @@ class PipelineRunServiceTest {
     // ── upsert — provider handling ─────────────────────────────────────────
 
     @Test
-    void upsert_unsupportedProvider_throwsProviderNotSupported() {
+    void upsertUnsupportedProviderThrowsProviderNotSupported() {
         PipelineRunUpsertRequest req = buildRequest("queued");
         req.setProvider("UNKNOWN_PROVIDER");
 
@@ -211,7 +211,7 @@ class PipelineRunServiceTest {
     }
 
     @Test
-    void upsert_providerIsCaseInsensitive_normalizedCorrectly() {
+    void upsertProviderIsCaseInsensitiveNormalizedCorrectly() {
         PipelineRunUpsertRequest req = buildRequest("queued");
         req.setProvider("github");
 
@@ -229,7 +229,7 @@ class PipelineRunServiceTest {
     // ── upsert — status coercion ───────────────────────────────────────────
 
     @Test
-    void upsert_unknownStatus_coercedToUnknown() {
+    void upsertUnknownStatusCoercedToUnknown() {
         PipelineRunUpsertRequest req = buildRequest("some_unknown_status");
         PipelineRun saved = buildRun("owner", "repo", "CI");
 
@@ -244,7 +244,7 @@ class PipelineRunServiceTest {
     }
 
     @Test
-    void upsert_nullStatus_coercedToUnknown() {
+    void upsertNullStatusCoercedToUnknown() {
         PipelineRunUpsertRequest req = buildRequest(null);
         // @NotBlank on the DTO would catch this in production, but the service
         // should still handle it gracefully if called directly
@@ -262,7 +262,7 @@ class PipelineRunServiceTest {
     // ── upsert — error handling ────────────────────────────────────────────
 
     @Test
-    void upsert_databaseFailure_throwsDbUpsertFailed() {
+    void upsertDatabaseFailureThrowsDbUpsertFailed() {
         PipelineRunUpsertRequest req = buildRequest("queued");
 
         when(repository.findByProviderAndOwnerAndRepoAndProviderRunId(any(), any(), any(), any()))
@@ -279,7 +279,7 @@ class PipelineRunServiceTest {
     }
 
     @Test
-    void upsert_serviceExceptionNotRewrapped() {
+    void upsertServiceExceptionNotRewrapped() {
         PipelineRunUpsertRequest req = buildRequest("queued");
         ServiceException original = ServiceException.of(ErrorCode.DB_UPSERT_CONFLICT)
                 .addDetail("providerRunId", "123456789");
@@ -299,7 +299,7 @@ class PipelineRunServiceTest {
     // ── listGrouped ────────────────────────────────────────────────────────
 
     @Test
-    void listGrouped_emptyDatabase_returnsEmptyList() {
+    void listGroupedEmptyDatabaseReturnsEmptyList() {
         when(repository.findRecentRunsPerWorkflow()).thenReturn(List.of());
 
         List<RepoSummaryResponse> result = pipelineRunService.listGrouped();
@@ -308,7 +308,7 @@ class PipelineRunServiceTest {
     }
 
     @Test
-    void listGrouped_singleRepoSingleWorkflow_returnsOneRepoWithOneWorkflow() {
+    void listGroupedSingleRepoSingleWorkflowReturnsOneRepoWithOneWorkflow() {
         List<PipelineRun> runs = List.of(
                 buildRun("owner", "repo", "CI"),
                 buildRun("owner", "repo", "CI"),
@@ -328,7 +328,7 @@ class PipelineRunServiceTest {
     }
 
     @Test
-    void listGrouped_singleRepoMultipleWorkflows_returnsOneRepoWithMultipleWorkflows() {
+    void listGroupedSingleRepoMultipleWorkflowsReturnsOneRepoWithMultipleWorkflows() {
         List<PipelineRun> runs = List.of(
                 buildRun("owner", "repo", "CI"),
                 buildRun("owner", "repo", "CI"),
@@ -347,7 +347,7 @@ class PipelineRunServiceTest {
     }
 
     @Test
-    void listGrouped_multipleRepos_returnsOneEntryPerRepo() {
+    void listGroupedMultipleReposReturnsOneEntryPerRepo() {
         List<PipelineRun> runs = List.of(
                 buildRun("owner", "repo-a", "CI"),
                 buildRun("owner", "repo-a", "CI"),
@@ -365,7 +365,7 @@ class PipelineRunServiceTest {
     }
 
     @Test
-    void listGrouped_runWithNullWorkflowName_groupedUnderEmptyStringKey() {
+    void listGroupedRunWithNullWorkflowNameGroupedUnderEmptyStringKey() {
         PipelineRun runWithNullWorkflow = buildRun("owner", "repo", null);
 
         when(repository.findRecentRunsPerWorkflow()).thenReturn(List.of(runWithNullWorkflow));
@@ -380,14 +380,14 @@ class PipelineRunServiceTest {
     // ── listByRepo ─────────────────────────────────────────────────────────
 
     @Test
-    void listByRepo_happyPath_returnsMappedPage() {
+    void listByRepoHappyPathReturnsMappedPage() {
         List<PipelineRun> runs = List.of(
                 buildRun("owner", "repo", "CI"),
                 buildRun("owner", "repo", "CI")
         );
         Page<PipelineRun> page = new PageImpl<>(runs, PageRequest.of(0, 20), 2);
 
-        when(repository.findByOwnerAndRepo(eq("owner"), eq("repo"), any())).thenReturn(page);
+        when(repository.findMainBranchRunsByOwnerAndRepo(eq("owner"), eq("repo"), any())).thenReturn(page);
 
         Page<RunSummaryResponse> result = pipelineRunService.listByRepo("owner", "repo", 0);
 
@@ -398,10 +398,10 @@ class PipelineRunServiceTest {
     }
 
     @Test
-    void listByRepo_emptyRepo_returnsEmptyPage() {
+    void listByRepoEmptyRepoReturnsEmptyPage() {
         Page<PipelineRun> emptyPage = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
 
-        when(repository.findByOwnerAndRepo(eq("owner"), eq("repo"), any())).thenReturn(emptyPage);
+        when(repository.findMainBranchRunsByOwnerAndRepo(eq("owner"), eq("repo"), any())).thenReturn(emptyPage);
 
         Page<RunSummaryResponse> result = pipelineRunService.listByRepo("owner", "repo", 0);
 
@@ -410,11 +410,11 @@ class PipelineRunServiceTest {
     }
 
     @Test
-    void listByRepo_secondPage_returnsCorrectPageMetadata() {
+    void listByRepoSecondPageReturnsCorrectPageMetadata() {
         List<PipelineRun> runs = List.of(buildRun("owner", "repo", "CI"));
         Page<PipelineRun> page = new PageImpl<>(runs, PageRequest.of(1, 20), 21);
 
-        when(repository.findByOwnerAndRepo(eq("owner"), eq("repo"), any())).thenReturn(page);
+        when(repository.findMainBranchRunsByOwnerAndRepo(eq("owner"), eq("repo"), any())).thenReturn(page);
 
         Page<RunSummaryResponse> result = pipelineRunService.listByRepo("owner", "repo", 1);
 
@@ -426,7 +426,7 @@ class PipelineRunServiceTest {
     // ── findById ───────────────────────────────────────────────────────────
 
     @Test
-    void findById_happyPath_returnsResponse() {
+    void findByIdHappyPathReturnsResponse() {
         UUID id = UUID.randomUUID();
         PipelineRun run = buildRun("owner", "repo", "CI");
 
@@ -440,7 +440,7 @@ class PipelineRunServiceTest {
     }
 
     @Test
-    void findById_notFound_throwsPipelineRunNotFound() {
+    void findByIdNotFoundThrowsPipelineRunNotFound() {
         UUID id = UUID.randomUUID();
 
         when(repository.findById(id)).thenReturn(Optional.empty());
