@@ -7,6 +7,7 @@ import com.muhammadullah.ci_debugger.pipeline.run.PipelineRun;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -84,9 +85,20 @@ public class PullRequestService {
         return pullRequestRepository
                 .findByProviderAndOwnerAndRepoAndPrNumber(provider, owner, repo, prNumber)
                 .orElseGet(() -> {
-                    log.info("Creating minimal PR row for {}/{} prNumber={}", owner, repo, prNumber);
-                    PullRequest pr = new PullRequest(provider, owner, repo, prNumber);
-                    return pullRequestRepository.save(pr);
+                    try {
+                        log.info("Creating minimal PR row for {}/{} prNumber={}", owner, repo, prNumber);
+                        PullRequest pr = new PullRequest(provider, owner, repo, prNumber);
+                        return pullRequestRepository.save(pr);
+                    } catch (DataIntegrityViolationException e) {
+                        log.info("PR row already exists for {}/{} prNumber={} — concurrent insert, fetching existing",
+                                owner, repo, prNumber);
+                        return pullRequestRepository
+                                .findByProviderAndOwnerAndRepoAndPrNumber(provider, owner, repo, prNumber)
+                                .orElseThrow(() -> ServiceException.of(ErrorCode.DB_UPSERT_FAILED)
+                                        .addDetail("owner", owner)
+                                        .addDetail("repo", repo)
+                                        .addDetail("prNumber", prNumber));
+                    }
                 });
     }
 }
