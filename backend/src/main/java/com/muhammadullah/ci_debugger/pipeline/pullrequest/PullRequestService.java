@@ -80,7 +80,6 @@ public class PullRequestService {
      * @param prNumber the pull request number
      * @return the existing or newly created pull request
      */
-    @Transactional
     public PullRequest findOrCreate(String provider, String owner, String repo, int prNumber) {
         return pullRequestRepository
                 .findByProviderAndOwnerAndRepoAndPrNumber(provider, owner, repo, prNumber)
