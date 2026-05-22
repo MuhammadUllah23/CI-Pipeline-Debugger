@@ -83,9 +83,6 @@ public class PipelineRun {
     @JoinColumn(name = "pr_id")
     private PullRequest pullRequest;
 
-    @Column(name = "pr_number")
-    private Integer prNumber;
-
     protected PipelineRun() {
     }
 
@@ -184,14 +181,6 @@ public class PipelineRun {
 
     public void setPullRequest(PullRequest pullRequest) {
         this.pullRequest = pullRequest;
-    }
-
-    public Integer getPrNumber() {
-        return prNumber;
-    }
-
-    public void setPrNumber(Integer prNumber) {
-        this.prNumber = prNumber;
     }
 
     // --- lifecycle methods ---
