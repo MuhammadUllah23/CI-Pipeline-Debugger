@@ -126,7 +126,7 @@ public class PipelineRunService {
      */
     @Transactional(readOnly = true)
     public Page<RunSummaryResponse> listByRepo(String owner, String repo, int page) {
-        return repository.findByOwnerAndRepo(owner, repo, PageRequest.of(page, REPO_PAGE_SIZE))
+        return repository.findMainBranchRunsByOwnerAndRepo(owner, repo, PageRequest.of(page, REPO_PAGE_SIZE))
                 .map(RunSummaryResponse::from);
     }
 
