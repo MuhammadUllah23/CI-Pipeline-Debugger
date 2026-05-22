@@ -34,7 +34,6 @@ public class PullRequestService {
 
     /**
      * Returns all open pull requests with their latest pipeline run each.
-     * Used by the dashboard to show open PR CI status at a glance.
      *
      * @return list of open PRs each with their most recent run
      */
@@ -49,7 +48,6 @@ public class PullRequestService {
 
     /**
      * Returns a single pull request by ID with a paginated list of its runs.
-     * Used for the PR detail page.
      *
      * @param id   the pull request ID
      * @param page zero-based page number
