@@ -133,19 +133,29 @@ Exposes pipeline run, step, and error cluster data via a REST API for consumptio
 
 ---
 
-### 🔲 Phase 5 — Pull Request Tracking & Branch Status
+### ✅ Phase 5 — Pull Request Tracking & Branch Status
 
-Extends pipeline run ingestion to capture pull request metadata, enabling PR-level views on the dashboard.
+Extends pipeline run ingestion to capture PR metadata, enabling PR-level views on the dashboard.
 
-**Planned:**
-- New columns on `pipeline_run`: `pr_number`, `pr_title`, `pr_state`
-- `GitHubWebhookPayload` updated to deserialize the `pull_requests` array from the webhook payload
-- PR info extracted in `GitHubWebhookMapper` and carried through `PipelineRunUpsertRequest`
-- New endpoints:
-  - `GET /api/runs/pull-requests?owner=&repo=` — all open PR runs for a repo
-  - `GET /api/runs/main-status?owner=&repo=` — last run on main branch
-  - `GET /api/runs/last-merged?owner=&repo=` — most recently merged PR for a repo
-- CI workflow updated to trigger on pull requests targeting main
+**What's included:**
+- `pull_request` table with unique constraint on `(provider, owner, repo, pr_number)`
+- `pr_id` FK on `pipeline_run` linking runs to their originating PR
+- `GITHUB_FETCH_PR_DETAILS` job type — fetches PR title, state, and head SHA from GitHub pulls API
+- Minimal PR row created immediately on webhook arrival, details populated asynchronously
+- Concurrent insert handling in `findOrCreate()` — safe under parallel webhook delivery
+- `pull_request` webhook event handling — PR state updated to `MERGED` or `CLOSED` on close
+- `GET /api/pull-requests/open` — dashboard: open PRs with latest run per workflow
+- `GET /api/pull-requests/{id}` — PR detail page: paginated run history
+- `GET /api/runs/{owner}/{repo}` updated to return main branch runs only
+- CI, Test, and Lint GitHub Actions workflows with Checkstyle enforcement
+- Testcontainers for real PostgreSQL testing in CI
+- PostgreSQL JDBC driver updated to `42.7.11` to address CVE
+
+**Key design decisions:**
+- PR row created upfront on webhook arrival — `pr_id` set before job processing begins
+- `GITHUB_FETCH_PR_DETAILS` skips API call if `prState != null` — idempotent enrichment
+- Dashboard query partitions by `(pr_id, workflow_name)` — latest run per workflow per PR
+- `pull_request` webhook handled in existing `GitHubWebhookController` — one controller per provider
 
 ---
 
