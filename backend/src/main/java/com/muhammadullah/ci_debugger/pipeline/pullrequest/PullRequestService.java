@@ -13,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -102,6 +103,29 @@ public class PullRequestService {
                                         .addDetail("repo", repo)
                                         .addDetail("prNumber", prNumber));
                     }
+                });
+    }
+
+    /**
+     * Updates the state of a pull request when it is closed or merged.
+     *
+     * @param provider the CI provider
+     * @param owner    the repository owner
+     * @param repo     the repository name
+     * @param prNumber the pull request number
+     * @param mergedAt the merge timestamp, or {@code null} if the PR was closed
+     *                 without merging
+     */
+    @Transactional
+    public void updateState(String provider, String owner, String repo, int prNumber, Instant mergedAt) {
+        pullRequestRepository
+                .findByProviderAndOwnerAndRepoAndPrNumber(provider, owner, repo, prNumber)
+                .ifPresent(pr -> {
+                    PullRequestState newState = mergedAt != null ? PullRequestState.MERGED : PullRequestState.CLOSED;
+                    String rawState = mergedAt != null ? "merged" : "closed";
+                    pr.applyDetails(pr.getTitle(), pr.getHeadSha(), pr.getHeadBranch(), rawState, newState);
+                    pullRequestRepository.save(pr);
+                    log.info("Updated PR {}/{} #{} state to {}", owner, repo, prNumber, newState);
                 });
     }
 }

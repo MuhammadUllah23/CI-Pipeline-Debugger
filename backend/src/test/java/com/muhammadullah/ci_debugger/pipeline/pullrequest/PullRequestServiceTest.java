@@ -13,10 +13,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -139,5 +142,93 @@ class PullRequestServiceTest {
 
         assertThat(response).isNotNull();
         assertThat(response.getRuns()).isEmpty();
+    }
+
+    @Test
+    void updateStateMergedPrUpdatesPrStateToMerged() {
+        UUID prId = UUID.randomUUID();
+        pullRequest.setId(prId);
+        Instant mergedAt = Instant.parse("2024-01-01T00:00:00Z");
+
+        when(pullRequestRepository.findByProviderAndOwnerAndRepoAndPrNumber(
+                "GITHUB", "owner", "repo", 42))
+                .thenReturn(Optional.of(pullRequest));
+        when(pullRequestRepository.save(any(PullRequest.class))).thenReturn(pullRequest);
+
+        pullRequestService.updateState("GITHUB", "owner", "repo", 42, mergedAt);
+
+        assertThat(pullRequest.getPrState()).isEqualTo(PullRequestState.MERGED);
+        assertThat(pullRequest.getPrStateRaw()).isEqualTo("merged");
+        verify(pullRequestRepository).save(pullRequest);
+    }
+
+    @Test
+    void updateStateClosedPrUpdatesPrStateToClosed() {
+        UUID prId = UUID.randomUUID();
+        pullRequest.setId(prId);
+
+        when(pullRequestRepository.findByProviderAndOwnerAndRepoAndPrNumber(
+                "GITHUB", "owner", "repo", 42))
+                .thenReturn(Optional.of(pullRequest));
+        when(pullRequestRepository.save(any(PullRequest.class))).thenReturn(pullRequest);
+
+        pullRequestService.updateState("GITHUB", "owner", "repo", 42, null);
+
+        assertThat(pullRequest.getPrState()).isEqualTo(PullRequestState.CLOSED);
+        assertThat(pullRequest.getPrStateRaw()).isEqualTo("closed");
+        verify(pullRequestRepository).save(pullRequest);
+    }
+
+    @Test
+    void updateStatePrNotFoundDoesNothing() {
+        when(pullRequestRepository.findByProviderAndOwnerAndRepoAndPrNumber(
+                "GITHUB", "owner", "repo", 42))
+                .thenReturn(Optional.empty());
+
+        pullRequestService.updateState("GITHUB", "owner", "repo", 42, null);
+
+        verify(pullRequestRepository, never()).save(any());
+    }
+
+    @Test
+    void findOrCreatePrDoesNotExistCreatesNewPr() {
+        when(pullRequestRepository.findByProviderAndOwnerAndRepoAndPrNumber(
+                "GITHUB", "owner", "repo", 42))
+                .thenReturn(Optional.empty());
+        when(pullRequestRepository.save(any(PullRequest.class))).thenReturn(pullRequest);
+
+        PullRequest result = pullRequestService.findOrCreate("GITHUB", "owner", "repo", 42);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getPrNumber()).isEqualTo(42);
+        verify(pullRequestRepository).save(any(PullRequest.class));
+    }
+
+    @Test
+    void findOrCreatePrAlreadyExistsReturnsExisting() {
+        when(pullRequestRepository.findByProviderAndOwnerAndRepoAndPrNumber(
+                "GITHUB", "owner", "repo", 42))
+                .thenReturn(Optional.of(pullRequest));
+
+        PullRequest result = pullRequestService.findOrCreate("GITHUB", "owner", "repo", 42);
+
+        assertThat(result).isEqualTo(pullRequest);
+        verify(pullRequestRepository, never()).save(any());
+    }
+
+    @Test
+    void findOrCreateConcurrentInsertReturnsExistingPr() {
+        when(pullRequestRepository.findByProviderAndOwnerAndRepoAndPrNumber(
+                "GITHUB", "owner", "repo", 42))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(pullRequest));
+        when(pullRequestRepository.save(any(PullRequest.class)))
+                .thenThrow(new DataIntegrityViolationException("duplicate key"));
+
+        PullRequest result = pullRequestService.findOrCreate("GITHUB", "owner", "repo", 42);
+
+        assertThat(result).isEqualTo(pullRequest);
+        verify(pullRequestRepository, times(2))
+                .findByProviderAndOwnerAndRepoAndPrNumber("GITHUB", "owner", "repo", 42);
     }
 }

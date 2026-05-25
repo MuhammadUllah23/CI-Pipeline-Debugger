@@ -48,7 +48,7 @@ public class GitHubWebhookController {
     }
 
     @PostMapping
-    public ResponseEntity<PipelineRunResponse> receive(
+    public ResponseEntity<?> receive(
             @RequestBody byte[] rawBody,
             @RequestHeader(value = GitHubWebhookConstants.SIGNATURE_HEADER, required = false) String signature,
             @RequestHeader(value = "X-GitHub-Event", defaultValue = "") String eventType) throws IOException {
@@ -57,17 +57,25 @@ public class GitHubWebhookController {
             return ResponseEntity.status(401).build();
         }
 
-        if (!GitHubWebhookConstants.EVENT_WORKFLOW_RUN.equals(eventType)) {
-            return ResponseEntity.noContent().build();
+        if (GitHubWebhookConstants.EVENT_WORKFLOW_RUN.equals(eventType)) {
+            return handleWorkflowRun(rawBody);
         }
 
+        if (GitHubWebhookConstants.EVENT_PULL_REQUEST.equals(eventType)) {
+            return handlePullRequest(rawBody);
+        }
+
+        return ResponseEntity.noContent().build();
+    }
+
+    private ResponseEntity<PipelineRunResponse> handleWorkflowRun(byte[] rawBody) throws IOException {
         GitHubWebhookPayload payload = objectMapper.readValue(rawBody, GitHubWebhookPayload.class);
         PipelineRunUpsertRequest pipelineRunUpsertRequest = GitHubWebhookMapper.toUpsertRequest(payload);
         PipelineRunResponse pipelineRunResponse = pipelineRunService.upsert(pipelineRunUpsertRequest);
 
         log.info("Upserted pipeline run {} for {}/{} (action={})",
-                pipelineRunResponse.getId(), pipelineRunResponse.getOwner(), pipelineRunResponse.getRepo(),
-                payload.getAction());
+                pipelineRunResponse.getId(), pipelineRunResponse.getOwner(),
+                pipelineRunResponse.getRepo(), payload.getAction());
 
         List<GitHubWebhookPayload.WorkflowRun.PullRequestRef> pullRequests = payload.getWorkflowRun().getPullRequests();
 
@@ -87,11 +95,35 @@ public class GitHubWebhookController {
         }
 
         if (GitHubWebhookConstants.ACTION_COMPLETED.equals(payload.getAction())) {
-            ProcessingJobResponse job = processingJobService.enqueue(pipelineRunResponse.getId(),
-                    ProcessingJobType.GITHUB_FETCH_STEPS);
-            log.info("Enqueued FETCH_STEPS job {} for pipeline run {}", job.getId(), pipelineRunResponse.getId());
+            ProcessingJobResponse job = processingJobService.enqueue(
+                    pipelineRunResponse.getId(), ProcessingJobType.GITHUB_FETCH_STEPS);
+            log.info("Enqueued FETCH_STEPS job {} for pipeline run {}",
+                    job.getId(), pipelineRunResponse.getId());
         }
 
         return ResponseEntity.ok(pipelineRunResponse);
+    }
+
+    private ResponseEntity<Void> handlePullRequest(byte[] rawBody) throws IOException {
+        GitHubPullRequestWebhookPayload payload = objectMapper
+                .readValue(rawBody, GitHubPullRequestWebhookPayload.class);
+
+        if (GitHubWebhookConstants.ACTION_CLOSED.equals(payload.getAction())) {
+            GitHubPullRequestWebhookPayload.PullRequest pr = payload.getPullRequest();
+            GitHubPullRequestWebhookPayload.Repository repo = payload.getRepository();
+
+            pullRequestService.updateState(
+                    GitHubWebhookConstants.PROVIDER,
+                    repo.getOwner().getLogin(),
+                    repo.getName(),
+                    pr.getNumber(),
+                    pr.getMergedAt());
+
+            log.info("Updated PR state for {}/{} #{} mergedAt={}",
+                    repo.getOwner().getLogin(), repo.getName(),
+                    pr.getNumber(), pr.getMergedAt());
+        }
+
+        return ResponseEntity.noContent().build();
     }
 }
