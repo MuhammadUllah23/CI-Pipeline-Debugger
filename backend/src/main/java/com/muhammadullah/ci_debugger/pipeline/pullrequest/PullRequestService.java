@@ -72,7 +72,7 @@ public class PullRequestService {
 
     /**
      * Finds an existing pull request by provider identity or creates a minimal
-     * row with just the identity fields if one does not exist yet.
+     * row with just the identity fields if one does not exist.
      *
      * @param provider the CI provider (e.g. "GITHUB")
      * @param owner    the repository owner
