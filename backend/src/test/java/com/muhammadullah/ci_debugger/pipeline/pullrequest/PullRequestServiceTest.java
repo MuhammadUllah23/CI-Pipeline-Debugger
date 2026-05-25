@@ -3,6 +3,7 @@ package com.muhammadullah.ci_debugger.pipeline.pullrequest;
 import com.muhammadullah.ci_debugger.exception.ErrorCode;
 import com.muhammadullah.ci_debugger.exception.ServiceException;
 import com.muhammadullah.ci_debugger.pipeline.pullrequest.dto.PullRequestResponse;
+import com.muhammadullah.ci_debugger.pipeline.pullrequest.dto.PullRequestSummaryResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRun;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunProvider;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunRepository;
@@ -230,5 +231,52 @@ class PullRequestServiceTest {
         assertThat(result).isEqualTo(pullRequest);
         verify(pullRequestRepository, times(2))
                 .findByProviderAndOwnerAndRepoAndPrNumber("GITHUB", "owner", "repo", 42);
+    }
+
+    @Test
+    void listByRepoHappyPathReturnsMappedSummaries() {
+        Page<PullRequest> page = new PageImpl<>(List.of(pullRequest));
+
+        when(pullRequestRepository.findByOwnerAndRepoAndPrStateOrderByUpdatedAtDesc(
+                eq("owner"), eq("repo"), eq(PullRequestState.OPEN), any(PageRequest.class)))
+                .thenReturn(page);
+
+        Page<PullRequestSummaryResponse> result = pullRequestService.listByRepo("owner", "repo",
+                PullRequestState.OPEN, 0);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getPrNumber()).isEqualTo(42);
+        assertThat(result.getContent().get(0).getTitle()).isEqualTo("Add feature");
+        assertThat(result.getContent().get(0).getPrState()).isEqualTo(PullRequestState.OPEN);
+        verify(pullRequestRepository).findByOwnerAndRepoAndPrStateOrderByUpdatedAtDesc(
+                eq("owner"), eq("repo"), eq(PullRequestState.OPEN), any(PageRequest.class));
+    }
+
+    @Test
+    void listByRepoMergedStatePassesMergedToRepository() {
+        Page<PullRequest> page = new PageImpl<>(List.of());
+
+        when(pullRequestRepository.findByOwnerAndRepoAndPrStateOrderByUpdatedAtDesc(
+                eq("owner"), eq("repo"), eq(PullRequestState.MERGED), any(PageRequest.class)))
+                .thenReturn(page);
+
+        pullRequestService.listByRepo("owner", "repo", PullRequestState.MERGED, 0);
+
+        verify(pullRequestRepository).findByOwnerAndRepoAndPrStateOrderByUpdatedAtDesc(
+                eq("owner"), eq("repo"), eq(PullRequestState.MERGED), any(PageRequest.class));
+    }
+
+    @Test
+    void listByRepoNoPrsReturnsEmptyPage() {
+        Page<PullRequest> emptyPage = new PageImpl<>(List.of());
+
+        when(pullRequestRepository.findByOwnerAndRepoAndPrStateOrderByUpdatedAtDesc(
+                eq("owner"), eq("repo"), eq(PullRequestState.OPEN), any(PageRequest.class)))
+                .thenReturn(emptyPage);
+
+        Page<PullRequestSummaryResponse> result = pullRequestService.listByRepo("owner", "repo",
+                PullRequestState.OPEN, 0);
+
+        assertThat(result.getContent()).isEmpty();
     }
 }

@@ -3,6 +3,7 @@ package com.muhammadullah.ci_debugger.pipeline.pullrequest;
 import com.muhammadullah.ci_debugger.exception.ErrorCode;
 import com.muhammadullah.ci_debugger.exception.ServiceException;
 import com.muhammadullah.ci_debugger.pipeline.pullrequest.dto.PullRequestResponse;
+import com.muhammadullah.ci_debugger.pipeline.pullrequest.dto.PullRequestSummaryResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRun;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunRepository;
 import org.slf4j.Logger;
@@ -127,5 +128,21 @@ public class PullRequestService {
                     pullRequestRepository.save(pr);
                     log.info("Updated PR {}/{} #{} state to {}", owner, repo, prNumber, newState);
                 });
+    }
+
+    /**
+     * Returns a paginated list of pull requests for a given repo filtered by state.
+     *
+     * @param owner the repository owner
+     * @param repo  the repository name
+     * @param state the PR state to filter by
+     * @param page  zero-based page number
+     * @return a page of pull request summaries
+     */
+    @Transactional(readOnly = true)
+    public Page<PullRequestSummaryResponse> listByRepo(String owner, String repo, PullRequestState state, int page) {
+        Page<PullRequest> prs = pullRequestRepository.findByOwnerAndRepoAndPrStateOrderByUpdatedAtDesc(
+                owner, repo, state, PageRequest.of(page, PR_RUNS_PAGE_SIZE));
+        return prs.map(PullRequestSummaryResponse::from);
     }
 }
