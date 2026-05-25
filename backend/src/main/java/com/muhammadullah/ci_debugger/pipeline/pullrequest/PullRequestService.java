@@ -7,6 +7,7 @@ import com.muhammadullah.ci_debugger.pipeline.run.PipelineRun;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -26,8 +27,7 @@ public class PullRequestService {
 
     public PullRequestService(
             PullRequestRepository pullRequestRepository,
-            PipelineRunRepository pipelineRunRepository
-    ) {
+            PipelineRunRepository pipelineRunRepository) {
         this.pullRequestRepository = pullRequestRepository;
         this.pipelineRunRepository = pipelineRunRepository;
     }
@@ -39,10 +39,14 @@ public class PullRequestService {
      */
     @Transactional(readOnly = true)
     public List<PullRequestResponse> listOpenWithLatestRun() {
-        List<PipelineRun> runs = pipelineRunRepository.findLatestRunForOpenPullRequests();
+        List<PipelineRun> runs = pipelineRunRepository.findLatestRunPerWorkflowForOpenPullRequests();
 
         return runs.stream()
-                .map(run -> PullRequestResponse.from(run.getPullRequest(), List.of(run)))
+                .collect(java.util.stream.Collectors.groupingBy(
+                        run -> run.getPullRequest().getId()))
+                .values()
+                .stream()
+                .map(prRuns -> PullRequestResponse.from(prRuns.get(0).getPullRequest(), prRuns))
                 .toList();
     }
 
@@ -52,7 +56,8 @@ public class PullRequestService {
      * @param id   the pull request ID
      * @param page zero-based page number
      * @return the pull request with paginated runs
-     * @throws ServiceException with {@link ErrorCode#DB_RECORD_NOT_FOUND} if not found
+     * @throws ServiceException with {@link ErrorCode#DB_RECORD_NOT_FOUND} if not
+     *                          found
      */
     @Transactional(readOnly = true)
     public PullRequestResponse findById(UUID id, int page) {
@@ -67,5 +72,36 @@ public class PullRequestService {
                 .findByPullRequestIdOrderByCreatedAtDesc(id, PageRequest.of(page, PR_RUNS_PAGE_SIZE));
 
         return PullRequestResponse.from(pr, runs.getContent());
+    }
+
+    /**
+     * Finds an existing pull request by provider identity or creates a minimal
+     * row with just the identity fields if one does not exist.
+     *
+     * @param provider the CI provider (e.g. "GITHUB")
+     * @param owner    the repository owner
+     * @param repo     the repository name
+     * @param prNumber the pull request number
+     * @return the existing or newly created pull request
+     */
+    public PullRequest findOrCreate(String provider, String owner, String repo, int prNumber) {
+        return pullRequestRepository
+                .findByProviderAndOwnerAndRepoAndPrNumber(provider, owner, repo, prNumber)
+                .orElseGet(() -> {
+                    try {
+                        log.info("Creating minimal PR row for {}/{} prNumber={}", owner, repo, prNumber);
+                        PullRequest pr = new PullRequest(provider, owner, repo, prNumber);
+                        return pullRequestRepository.save(pr);
+                    } catch (DataIntegrityViolationException e) {
+                        log.info("PR row already exists for {}/{} prNumber={} — concurrent insert, fetching existing",
+                                owner, repo, prNumber);
+                        return pullRequestRepository
+                                .findByProviderAndOwnerAndRepoAndPrNumber(provider, owner, repo, prNumber)
+                                .orElseThrow(() -> ServiceException.of(ErrorCode.DB_UPSERT_FAILED)
+                                        .addDetail("owner", owner)
+                                        .addDetail("repo", repo)
+                                        .addDetail("prNumber", prNumber));
+                    }
+                });
     }
 }

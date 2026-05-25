@@ -47,6 +47,7 @@ class PullRequestServiceTest {
     @BeforeEach
     void setUp() {
         pullRequest = new PullRequest("GITHUB", "owner", "repo", 42);
+        pullRequest.setId(UUID.randomUUID());
         pullRequest.applyDetails("Add feature", "abc123", "feature-branch", "open", PullRequestState.OPEN);
 
         pipelineRun = new PipelineRun(
@@ -55,12 +56,14 @@ class PullRequestServiceTest {
                 "repo",
                 "123456789",
                 PipelineRunStatus.COMPLETED);
+
+        pipelineRun.setId(UUID.randomUUID());
         pipelineRun.setPullRequest(pullRequest);
     }
 
     @Test
     void listOpenWithLatestRunReturnsMappedResponses() {
-        when(pipelineRunRepository.findLatestRunForOpenPullRequests())
+        when(pipelineRunRepository.findLatestRunPerWorkflowForOpenPullRequests())
                 .thenReturn(List.of(pipelineRun));
 
         List<PullRequestResponse> responses = pullRequestService.listOpenWithLatestRun();
@@ -70,18 +73,18 @@ class PullRequestServiceTest {
         assertThat(responses.get(0).getTitle()).isEqualTo("Add feature");
         assertThat(responses.get(0).getPrState()).isEqualTo(PullRequestState.OPEN);
         assertThat(responses.get(0).getRuns()).hasSize(1);
-        verify(pipelineRunRepository).findLatestRunForOpenPullRequests();
+        verify(pipelineRunRepository).findLatestRunPerWorkflowForOpenPullRequests();
     }
 
     @Test
     void listOpenWithLatestRunNoOpenPrsReturnsEmptyList() {
-        when(pipelineRunRepository.findLatestRunForOpenPullRequests())
+        when(pipelineRunRepository.findLatestRunPerWorkflowForOpenPullRequests())
                 .thenReturn(List.of());
 
         List<PullRequestResponse> responses = pullRequestService.listOpenWithLatestRun();
 
         assertThat(responses).isEmpty();
-        verify(pipelineRunRepository).findLatestRunForOpenPullRequests();
+        verify(pipelineRunRepository).findLatestRunPerWorkflowForOpenPullRequests();
     }
 
     @Test

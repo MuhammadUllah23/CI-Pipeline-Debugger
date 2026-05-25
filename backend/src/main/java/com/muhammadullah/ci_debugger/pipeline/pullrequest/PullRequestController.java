@@ -25,7 +25,7 @@ public class PullRequestController {
         this.pullRequestService = pullRequestService;
     }
 
-    @GetMapping
+    @GetMapping("/open")
     public ResponseEntity<List<PullRequestResponse>> listOpen() {
         log.info("GET /api/pull-requests — fetching open PRs with latest run");
         return ResponseEntity.ok(pullRequestService.listOpenWithLatestRun());

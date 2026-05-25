@@ -4,11 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.muhammadullah.ci_debugger.pipeline.job.ProcessingJobService;
 import com.muhammadullah.ci_debugger.pipeline.job.ProcessingJobType;
 import com.muhammadullah.ci_debugger.pipeline.job.dto.ProcessingJobResponse;
+import com.muhammadullah.ci_debugger.pipeline.pullrequest.PullRequest;
+import com.muhammadullah.ci_debugger.pipeline.pullrequest.PullRequestService;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunService;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunUpsertRequest;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,16 +32,19 @@ public class GitHubWebhookController {
     private final ObjectMapper objectMapper;
     private final PipelineRunService pipelineRunService;
     private final ProcessingJobService processingJobService;
+    private final PullRequestService pullRequestService;
 
     public GitHubWebhookController(
             HmacVerifier hmacVerifier,
             ObjectMapper objectMapper,
             PipelineRunService pipelineRunService,
-            ProcessingJobService processingJobService) {
+            ProcessingJobService processingJobService,
+            PullRequestService pullRequestService) {
         this.hmacVerifier = hmacVerifier;
         this.objectMapper = objectMapper;
         this.pipelineRunService = pipelineRunService;
         this.processingJobService = processingJobService;
+        this.pullRequestService = pullRequestService;
     }
 
     @PostMapping
@@ -62,6 +68,23 @@ public class GitHubWebhookController {
         log.info("Upserted pipeline run {} for {}/{} (action={})",
                 pipelineRunResponse.getId(), pipelineRunResponse.getOwner(), pipelineRunResponse.getRepo(),
                 payload.getAction());
+
+        List<GitHubWebhookPayload.WorkflowRun.PullRequestRef> pullRequests = payload.getWorkflowRun().getPullRequests();
+
+        if (pullRequests != null && !pullRequests.isEmpty()) {
+            int prNumber = pullRequests.get(0).getNumber();
+            PullRequest pullRequest = pullRequestService.findOrCreate(
+                    GitHubWebhookConstants.PROVIDER,
+                    pipelineRunResponse.getOwner(),
+                    pipelineRunResponse.getRepo(),
+                    prNumber);
+            pipelineRunService.linkPullRequest(pipelineRunResponse.getId(), pullRequest);
+
+            ProcessingJobResponse prJob = processingJobService.enqueue(
+                    pipelineRunResponse.getId(), ProcessingJobType.GITHUB_FETCH_PR_DETAILS);
+            log.info("Enqueued FETCH_PR_DETAILS job {} for pipeline run {}",
+                    prJob.getId(), pipelineRunResponse.getId());
+        }
 
         if (GitHubWebhookConstants.ACTION_COMPLETED.equals(payload.getAction())) {
             ProcessingJobResponse job = processingJobService.enqueue(pipelineRunResponse.getId(),

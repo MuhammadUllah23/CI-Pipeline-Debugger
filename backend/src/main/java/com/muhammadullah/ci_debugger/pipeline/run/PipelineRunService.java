@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.muhammadullah.ci_debugger.exception.ErrorCode;
 import com.muhammadullah.ci_debugger.exception.ServiceException;
+import com.muhammadullah.ci_debugger.pipeline.pullrequest.PullRequest;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunUpsertRequest;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.RepoSummaryResponse;
@@ -115,6 +116,16 @@ public class PipelineRunService {
                 .toList();
     }
 
+    @Transactional
+    public void linkPullRequest(UUID pipelineRunId, PullRequest pullRequest) {
+        PipelineRun run = repository.findById(pipelineRunId)
+                .orElseThrow(() -> ServiceException.of(ErrorCode.PIPELINE_RUN_NOT_FOUND)
+                        .addDetail("pipelineRunId", pipelineRunId));
+        run.setPullRequest(pullRequest);
+        repository.save(run);
+        log.info("Linked PR {} to pipeline run {}", pullRequest.getId(), pipelineRunId);
+    }
+
     /**
      * Returns a paginated list of runs for a specific repo, sorted by
      * {@code createdAt DESC}.
@@ -203,9 +214,6 @@ public class PipelineRunService {
         }
         if (req.getBranch() != null && run.getBranch() == null) {
             run.setBranch(req.getBranch());
-        }
-        if (req.getPrNumber() != null && run.getPrNumber() == null) {
-            run.setPrNumber(req.getPrNumber());
         }
     }
 

@@ -1,5 +1,7 @@
 package com.muhammadullah.ci_debugger.pipeline.job.handler;
 
+import com.muhammadullah.ci_debugger.exception.ErrorCode;
+import com.muhammadullah.ci_debugger.exception.ServiceException;
 import com.muhammadullah.ci_debugger.pipeline.job.ProcessingJob;
 import com.muhammadullah.ci_debugger.pipeline.job.ProcessingJobType;
 import com.muhammadullah.ci_debugger.pipeline.pullrequest.PullRequest;
@@ -40,37 +42,23 @@ public class GitHubFetchPrDetailsJobHandler implements JobHandler {
     @Override
     @Transactional
     public void handle(ProcessingJob job) {
-        PipelineRun run = job.getPipelineRun();
-        int prNumber = run.getPrNumber();
+        PipelineRun run = pipelineRunRepository.findById(job.getPipelineRun().getId())
+                .orElseThrow(() -> ServiceException.of(ErrorCode.PIPELINE_RUN_NOT_FOUND)
+                        .addDetail("pipelineRunId", job.getPipelineRun().getId()));
+        PullRequest pullRequest = run.getPullRequest();
 
         log.info("Fetching PR details for {}/{} prNumber={} pipelineRun={}",
-                run.getOwner(), run.getRepo(), prNumber, run.getId());
+                run.getOwner(), run.getRepo(), pullRequest.getPrNumber(), run.getId());
 
-        PullRequest pullRequest = pullRequestRepository
-                .findByProviderAndOwnerAndRepoAndPrNumber(
-                        run.getProvider().name(),
-                        run.getOwner(),
-                        run.getRepo(),
-                        prNumber)
-                .orElseGet(() -> fetchAndPersist(run, prNumber));
+        if (pullRequest.getPrState() != null) {
+            log.info("PR {} already has details — skipping API call", pullRequest.getId());
+            return;
+        }
 
-        run.setPullRequest(pullRequest);
-        pipelineRunRepository.save(run);
-
-        log.info("Linked PR {} to pipeline run {}", pullRequest.getId(), run.getId());
-    }
-
-    private PullRequest fetchAndPersist(PipelineRun run, int prNumber) {
         GitHubPullRequestApiResponse response = gitHubPullRequestApiClient
-                .fetchPullRequest(run.getOwner(), run.getRepo(), prNumber);
+                .fetchPullRequest(run.getOwner(), run.getRepo(), pullRequest.getPrNumber());
 
         PullRequestState state = GitHubPullRequestApiClient.resolveState(response);
-
-        PullRequest pullRequest = new PullRequest(
-                run.getProvider().name(),
-                run.getOwner(),
-                run.getRepo(),
-                prNumber);
 
         pullRequest.applyDetails(
                 response.getTitle(),
@@ -79,9 +67,9 @@ public class GitHubFetchPrDetailsJobHandler implements JobHandler {
                 response.getState(),
                 state);
 
-        PullRequest saved = pullRequestRepository.save(pullRequest);
-        log.info("Persisted new PR {} ({}/{} #{}) state={}",
-                saved.getId(), run.getOwner(), run.getRepo(), prNumber, state);
-        return saved;
+        pullRequestRepository.save(pullRequest);
+        log.info("Applied details to PR {} ({}/{} #{}) state={}",
+                pullRequest.getId(), run.getOwner(), run.getRepo(),
+                pullRequest.getPrNumber(), state);
     }
 }
