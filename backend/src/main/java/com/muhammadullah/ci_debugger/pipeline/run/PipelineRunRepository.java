@@ -70,15 +70,18 @@ public interface PipelineRunRepository extends JpaRepository<PipelineRun, UUID> 
     /**
      * Returns the most recent pipeline run for each open pull request.
      */
-    @Query("""
-            SELECT r FROM PipelineRun r
-            JOIN FETCH r.pullRequest pr
-            WHERE pr.prState = 'OPEN'
-            AND r.createdAt = (
-                SELECT MAX(r2.createdAt) FROM PipelineRun r2
-                WHERE r2.pullRequest.id = pr.id
+    @Query(value = """
+            SELECT r.* FROM pipeline_run r
+            JOIN pull_request pr ON r.pr_id = pr.id
+            WHERE pr.pr_state = 'OPEN'
+            AND r.id = (
+                SELECT r2.id FROM pipeline_run r2
+                WHERE r2.pr_id = pr.id
+                AND r2.workflow_name = r.workflow_name
+                ORDER BY r2.created_at DESC
+                LIMIT 1
             )
-            ORDER BY r.createdAt DESC
-            """)
-    List<PipelineRun> findLatestRunForOpenPullRequests();
+            ORDER BY r.created_at DESC
+            """, nativeQuery = true)
+    List<PipelineRun> findLatestRunPerWorkflowForOpenPullRequests();
 }

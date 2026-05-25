@@ -39,10 +39,14 @@ public class PullRequestService {
      */
     @Transactional(readOnly = true)
     public List<PullRequestResponse> listOpenWithLatestRun() {
-        List<PipelineRun> runs = pipelineRunRepository.findLatestRunForOpenPullRequests();
+        List<PipelineRun> runs = pipelineRunRepository.findLatestRunPerWorkflowForOpenPullRequests();
 
         return runs.stream()
-                .map(run -> PullRequestResponse.from(run.getPullRequest(), List.of(run)))
+                .collect(java.util.stream.Collectors.groupingBy(
+                        run -> run.getPullRequest().getId()))
+                .values()
+                .stream()
+                .map(prRuns -> PullRequestResponse.from(prRuns.get(0).getPullRequest(), prRuns))
                 .toList();
     }
 
