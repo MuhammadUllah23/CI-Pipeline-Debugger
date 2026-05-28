@@ -38,8 +38,9 @@ public class GitHubLogsApiClient {
      * <p>
      * Only files matching the pattern {@code {index}_{jobName}.txt} at the
      * root level of the zip are processed — system-level files like
-     * {@code build/system.txt} are ignored. Error lines are identified by the
-     * prefixes {@code [ERROR]} and {@code ##[error]}.
+     * {@code build/system.txt} are ignored. The snippet for each failing step
+     * is captured from the last {@code ##[group]} marker before the
+     * {@code ##[error]} line, excluding metadata noise.
      *
      * @param owner the repository owner
      * @param repo  the repository name
@@ -90,10 +91,6 @@ public class GitHubLogsApiClient {
     private Map<String, List<String>> extractErrorLines(byte[] zipBytes, String owner, String repo, String runId)
             throws IOException {
         Map<String, List<String>> errorLinesByJob = new HashMap<>();
-
-        // ByteArrayInputStream wraps the byte array so it can be read as a stream.
-        // ZipInputStream wraps that so we can iterate through the zip entries one by
-        // one.
 
         try (ZipInputStream zipInputStream = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
             ZipEntry entry;
@@ -148,24 +145,92 @@ public class GitHubLogsApiClient {
     }
 
     /**
-     * Reads lines from the current zip entry and returns those that start with
-     * {@code [ERROR]} or {@code ##[error]} after stripping the timestamp prefix.
+     * Reads lines from the current zip entry and returns the content of the
+     * failing step — everything from the last {@code ##[group]} marker before
+     * a {@code ##[error]} line through to and including the {@code ##[error]}
+     * line itself. The command echo immediately after {@code ##[group]} and
+     * metadata noise lines are excluded.
+     *
+     * <p>
+     * Returns an empty list if no {@code ##[error]} line is found.
      */
     private List<String> extractErrorLinesFromEntry(ZipInputStream zipInputStream) throws IOException {
-        List<String> errorLines = new ArrayList<>();
+        List<String> currentGroupLines = new ArrayList<>();
+        List<String> errorGroupLines = new ArrayList<>();
+        boolean foundError = false;
+        boolean skippedCommandEcho = true;
 
         BufferedReader reader = new BufferedReader(
                 new InputStreamReader(zipInputStream, StandardCharsets.UTF_8));
 
         String line;
         while ((line = reader.readLine()) != null) {
-            String stripped = stripTimestamp(line);
-            if (stripped.startsWith("[ERROR]") || stripped.startsWith("##[error]")) {
-                errorLines.add(stripped);
+            String stripped = stripAnsiCodes(stripTimestamp(line));
+
+            if (stripped.startsWith("##[group]")) {
+                currentGroupLines = new ArrayList<>();
+                currentGroupLines.add(stripped);
+                skippedCommandEcho = false;
+                continue;
+            }
+
+            if (stripped.startsWith("##[endgroup]")) {
+                continue;
+            }
+
+            if (stripped.startsWith("##[error]")) {
+                if (!foundError) {
+                    errorGroupLines = new ArrayList<>(currentGroupLines);
+                    foundError = true;
+                }
+                errorGroupLines.add(stripped);
+                return errorGroupLines;
+            }
+
+            if (!skippedCommandEcho) {
+                skippedCommandEcho = true;
+                continue;
+            }
+
+            if (isNoiseLine(stripped)) {
+                continue;
+            }
+
+            if (foundError) {
+                errorGroupLines.add(stripped);
+            } else {
+                currentGroupLines.add(stripped);
             }
         }
 
-        return errorLines;
+        return errorGroupLines;
+    }
+
+    /**
+     * Returns true for lines that are GitHub Actions metadata noise —
+     * shell declarations, empty lines, and command echoes that add no
+     * debugging value to the snippet.
+     */
+    private boolean isNoiseLine(String line) {
+        if (line.isBlank()) {
+            return true;
+        }
+        if (line.startsWith("shell:")) {
+            return true;
+        }
+        if (line.startsWith("[command]")) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Strips ANSI terminal escape codes from a log line.
+     * GitHub Actions logs contain color codes like {@code [36;1m} and {@code [0m}
+     * that are meaningless outside a terminal.
+     */
+    private String stripAnsiCodes(String line) {
+        return line.replaceAll("\\x1B\\[[;\\d]*[A-Za-z]|\\[\\d+m", "");
     }
 
     /**
@@ -175,8 +240,13 @@ public class GitHubLogsApiClient {
      */
     private String stripTimestamp(String line) {
         int spaceIndex = line.indexOf(' ');
-        if (spaceIndex > 0 && spaceIndex < line.length() - 1) {
-            return line.substring(spaceIndex + 1);
+        if (spaceIndex > 0) {
+            return line.substring(spaceIndex + 1).stripTrailing();
+        }
+        // Handle lines that are just a timestamp with no content —
+        // trailing spaces get stripped in text blocks, leaving a bare timestamp
+        if (line.endsWith("Z") && line.contains("T")) {
+            return "";
         }
         return line;
     }

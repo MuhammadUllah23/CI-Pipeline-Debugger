@@ -24,3 +24,24 @@ jobs:
       - name: Build with Maven
         run: mvn clean compile
         working-directory: backend
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build
+        run: npm run build
+        working-directory: frontend
