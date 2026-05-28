@@ -466,7 +466,7 @@ class PipelineRunServiceTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getOwner()).isEqualTo("owner");
         assertThat(result.get(0).getRepo()).isEqualTo("repo");
-        assertThat(result.get(0).getOverallConclusion()).isEqualTo(PipelineRunConclusion.SUCCESS);
+        assertThat(result.get(0).getOverallConclusion()).isEqualTo("SUCCESS");
         verify(repository).findRepoHealthSummaries();
     }
 
@@ -513,8 +513,8 @@ class PipelineRunServiceTest {
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0).getRepo()).isEqualTo("repo-a");
-        assertThat(result.get(0).getOverallConclusion()).isEqualTo(PipelineRunConclusion.SUCCESS);
+        assertThat(result.get(0).getOverallConclusion()).isEqualTo("SUCCESS");
         assertThat(result.get(1).getRepo()).isEqualTo("repo-b");
-        assertThat(result.get(1).getOverallConclusion()).isEqualTo(PipelineRunConclusion.FAILURE);
+        assertThat(result.get(1).getOverallConclusion()).isEqualTo("FAILURE");
     }
 }
