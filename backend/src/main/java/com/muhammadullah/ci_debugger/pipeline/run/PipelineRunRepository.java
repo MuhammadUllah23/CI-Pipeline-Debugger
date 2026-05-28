@@ -84,4 +84,25 @@ public interface PipelineRunRepository extends JpaRepository<PipelineRun, UUID> 
             ORDER BY r.created_at DESC
             """, nativeQuery = true)
     List<PipelineRun> findLatestRunPerWorkflowForOpenPullRequests();
+
+    @Query(value = """
+            SELECT owner, repo,
+              CASE
+                WHEN bool_or(conclusion = 'FAILURE') THEN 'FAILURE'
+                WHEN bool_or(status != 'COMPLETED') THEN 'IN_PROGRESS'
+                ELSE 'SUCCESS'
+              END AS overall_conclusion
+            FROM (
+              SELECT DISTINCT ON (owner, repo, workflow_name)
+                owner, repo, workflow_name, conclusion, status
+              FROM pipeline_run
+              WHERE branch = 'main'
+              AND pr_id IS NULL
+              AND workflow_name IS NOT NULL
+              ORDER BY owner, repo, workflow_name, created_at DESC
+            ) latest_per_workflow
+            GROUP BY owner, repo
+            ORDER BY owner, repo
+            """, nativeQuery = true)
+    List<RepoHealthSummary> findRepoHealthSummaries();
 }
