@@ -3,6 +3,7 @@ package com.muhammadullah.ci_debugger.pipeline.run.github.client;
 import com.muhammadullah.ci_debugger.exception.ErrorCode;
 import com.muhammadullah.ci_debugger.exception.ServiceException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -32,7 +33,8 @@ class GitHubLogsApiClientTest {
     private static final String OWNER = "owner";
     private static final String REPO = "ci-pipeline-debugger";
     private static final String RUN_ID = "123456789";
-    private static final String EXPECTED_PATH = "/repos/" + OWNER + "/" + REPO + "/actions/runs/" + RUN_ID + "/logs";
+    private static final String EXPECTED_PATH = "/repos/" + OWNER + "/" + REPO + "/actions/runs/" + RUN_ID
+            + "/logs";
 
     private GitHubLogsApiClient client;
     private MockRestServiceServer mockServer;
@@ -47,10 +49,13 @@ class GitHubLogsApiClientTest {
     }
 
     @Test
-    void fetchErrorLines_happyPath_returnsErrorLinesMappedByJobName() throws IOException {
+    @DisplayName("returns group context and error line for happy path")
+    void fetchErrorLinesReturnsGroupContextAndErrorLine() throws IOException {
         String logContent = """
+                2026-04-01T02:31:11.379Z ##[group]Run mvn clean compile
                 2026-04-01T02:31:11.379Z [INFO] Scanning for projects...
                 2026-04-01T02:31:11.379Z [ERROR] No POM in this directory
+                2026-04-01T02:31:11.379Z ##[endgroup]
                 2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
                 """;
 
@@ -63,25 +68,107 @@ class GitHubLogsApiClientTest {
         Map<String, List<String>> result = client.fetchErrorLines(OWNER, REPO, RUN_ID);
 
         assertThat(result).containsKey("build");
-        assertThat(result.get("build")).hasSize(2);
-        assertThat(result.get("build").get(0)).isEqualTo("[ERROR] No POM in this directory");
-        assertThat(result.get("build").get(1)).isEqualTo("##[error]Process completed with exit code 1.");
+        assertThat(result.get("build")).containsExactly(
+                "##[group]Run mvn clean compile",
+                "[INFO] Scanning for projects...",
+                "[ERROR] No POM in this directory",
+                "##[error]Process completed with exit code 1.");
         mockServer.verify();
     }
 
     @Test
-    void fetchErrorLines_multipleJobFiles_returnsErrorLinesFromAllJobs() throws IOException {
+    @DisplayName("captures all error lines when multiple ##[error] lines present")
+    void fetchErrorLinesCapturesAllErrorLines() throws IOException {
+        String logContent = """
+                2026-04-01T02:31:11.379Z ##[group]Run mvn clean compile
+                2026-04-01T02:31:11.379Z [ERROR] First error
+                2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
+                2026-04-01T02:31:11.379Z ##[error]Another error occurred.
+                """;
+
+        byte[] zipBytes = buildZip(Map.of("0_build.txt", logContent));
+
+        mockServer.expect(requestTo(containsString(EXPECTED_PATH)))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(zipBytes, MediaType.APPLICATION_OCTET_STREAM));
+
+        Map<String, List<String>> result = client.fetchErrorLines(OWNER, REPO, RUN_ID);
+
+        assertThat(result.get("build")).containsExactly(
+                "##[group]Run mvn clean compile",
+                "[ERROR] First error",
+                "##[error]Process completed with exit code 1.",
+                "##[error]Another error occurred.");
+        mockServer.verify();
+    }
+
+    @Test
+    @DisplayName("only captures group containing the error when multiple groups present")
+    void fetchErrorLinesOnlyCapturesGroupContainingError() throws IOException {
+        String logContent = """
+                2026-04-01T02:31:11.379Z ##[group]Checkout code
+                2026-04-01T02:31:11.379Z [INFO] Checking out repository
+                2026-04-01T02:31:11.379Z ##[endgroup]
+                2026-04-01T02:31:11.379Z ##[group]Run mvn clean compile
+                2026-04-01T02:31:11.379Z [ERROR] No POM in this directory
+                2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
+                """;
+
+        byte[] zipBytes = buildZip(Map.of("0_build.txt", logContent));
+
+        mockServer.expect(requestTo(containsString(EXPECTED_PATH)))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(zipBytes, MediaType.APPLICATION_OCTET_STREAM));
+
+        Map<String, List<String>> result = client.fetchErrorLines(OWNER, REPO, RUN_ID);
+
+        assertThat(result.get("build")).containsExactly(
+                "##[group]Run mvn clean compile",
+                "[ERROR] No POM in this directory",
+                "##[error]Process completed with exit code 1.");
+        assertThat(result.get("build")).noneMatch(line -> line.contains("Checkout code"));
+        mockServer.verify();
+    }
+
+    @Test
+    @DisplayName("excludes ##[endgroup] lines from snippet")
+    void fetchErrorLinesExcludesEndGroupLines() throws IOException {
+        String logContent = """
+                2026-04-01T02:31:11.379Z ##[group]Run mvn clean compile
+                2026-04-01T02:31:11.379Z [ERROR] No POM in this directory
+                2026-04-01T02:31:11.379Z ##[endgroup]
+                2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
+                """;
+
+        byte[] zipBytes = buildZip(Map.of("0_build.txt", logContent));
+
+        mockServer.expect(requestTo(containsString(EXPECTED_PATH)))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(zipBytes, MediaType.APPLICATION_OCTET_STREAM));
+
+        Map<String, List<String>> result = client.fetchErrorLines(OWNER, REPO, RUN_ID);
+
+        assertThat(result.get("build")).noneMatch(line -> line.startsWith("##[endgroup]"));
+        mockServer.verify();
+    }
+
+    @Test
+    @DisplayName("returns snippets from all jobs when multiple job files present")
+    void fetchErrorLinesReturnsSnippetsFromAllJobs() throws IOException {
         String buildLog = """
+                2026-04-01T02:31:11.379Z ##[group]Run mvn clean compile
                 2026-04-01T02:31:11.379Z [ERROR] Build failed
+                2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
                 """;
         String testLog = """
+                2026-04-01T02:31:11.379Z ##[group]Run tests
                 2026-04-01T02:31:11.379Z [ERROR] Tests failed
+                2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
                 """;
 
         byte[] zipBytes = buildZip(Map.of(
                 "0_build.txt", buildLog,
-                "1_test.txt", testLog
-        ));
+                "1_test.txt", testLog));
 
         mockServer.expect(requestTo(containsString(EXPECTED_PATH)))
                 .andExpect(method(HttpMethod.GET))
@@ -90,15 +177,39 @@ class GitHubLogsApiClientTest {
         Map<String, List<String>> result = client.fetchErrorLines(OWNER, REPO, RUN_ID);
 
         assertThat(result).containsKeys("build", "test");
-        assertThat(result.get("build").get(0)).isEqualTo("[ERROR] Build failed");
-        assertThat(result.get("test").get(0)).isEqualTo("[ERROR] Tests failed");
+        assertThat(result.get("build")).contains("[ERROR] Build failed");
+        assertThat(result.get("test")).contains("[ERROR] Tests failed");
         mockServer.verify();
     }
 
     @Test
-    void fetchErrorLines_systemFilesSkipped_notIncludedInResult() throws IOException {
+    @DisplayName("excludes job from result when no ##[error] line found")
+    void fetchErrorLinesExcludesJobWithNoErrorLine() throws IOException {
+        String logContent = """
+                2026-04-01T02:31:11.379Z ##[group]Run mvn clean compile
+                2026-04-01T02:31:11.379Z [INFO] Build successful
+                2026-04-01T02:31:11.379Z ##[endgroup]
+                """;
+
+        byte[] zipBytes = buildZip(Map.of("0_build.txt", logContent));
+
+        mockServer.expect(requestTo(containsString(EXPECTED_PATH)))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(zipBytes, MediaType.APPLICATION_OCTET_STREAM));
+
+        Map<String, List<String>> result = client.fetchErrorLines(OWNER, REPO, RUN_ID);
+
+        assertThat(result).isEmpty();
+        mockServer.verify();
+    }
+
+    @Test
+    @DisplayName("skips system files and does not include them in result")
+    void fetchErrorLinesSkipsSystemFiles() throws IOException {
         String systemLog = """
+                2026-04-01T02:31:11.379Z ##[group]System
                 2026-04-01T02:31:11.379Z [ERROR] Some system error
+                2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
                 """;
 
         byte[] zipBytes = buildZip(Map.of("build/system.txt", systemLog));
@@ -114,26 +225,8 @@ class GitHubLogsApiClientTest {
     }
 
     @Test
-    void fetchErrorLines_jobWithNoErrorLines_excludedFromResult() throws IOException {
-        String logContent = """
-                2026-04-01T02:31:11.379Z [INFO] Build successful
-                2026-04-01T02:31:11.379Z [INFO] All tests passed
-                """;
-
-        byte[] zipBytes = buildZip(Map.of("0_build.txt", logContent));
-
-        mockServer.expect(requestTo(containsString(EXPECTED_PATH)))
-                .andExpect(method(HttpMethod.GET))
-                .andRespond(withSuccess(zipBytes, MediaType.APPLICATION_OCTET_STREAM));
-
-        Map<String, List<String>> result = client.fetchErrorLines(OWNER, REPO, RUN_ID);
-
-        assertThat(result).isEmpty();
-        mockServer.verify();
-    }
-
-    @Test
-    void fetchErrorLines_emptyResponseBody_returnsEmptyMap() {
+    @DisplayName("returns empty map when response body is empty")
+    void fetchErrorLinesReturnsEmptyMapForEmptyResponse() {
         mockServer.expect(requestTo(containsString(EXPECTED_PATH)))
                 .andExpect(method(HttpMethod.GET))
                 .andRespond(withSuccess(new byte[0], MediaType.APPLICATION_OCTET_STREAM));
@@ -145,7 +238,8 @@ class GitHubLogsApiClientTest {
     }
 
     @Test
-    void fetchErrorLines_fourxxError_throwsProviderApiClientError() {
+    @DisplayName("throws PROVIDER_API_CLIENT_ERROR on 4xx response")
+    void fetchErrorLinesThrowsProviderApiClientErrorOnFourxx() {
         mockServer.expect(requestTo(containsString(EXPECTED_PATH)))
                 .andExpect(method(HttpMethod.GET))
                 .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
@@ -165,7 +259,8 @@ class GitHubLogsApiClientTest {
     }
 
     @Test
-    void fetchErrorLines_fivexxError_throwsProviderApiUnavailable() {
+    @DisplayName("throws PROVIDER_API_UNAVAILABLE on 5xx response")
+    void fetchErrorLinesThrowsProviderApiUnavailableOnFivexx() {
         mockServer.expect(requestTo(containsString(EXPECTED_PATH)))
                 .andExpect(method(HttpMethod.GET))
                 .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
@@ -182,7 +277,8 @@ class GitHubLogsApiClientTest {
     }
 
     @Test
-    void fetchErrorLines_timeout_throwsProviderApiUnavailable() {
+    @DisplayName("throws PROVIDER_API_UNAVAILABLE on timeout")
+    void fetchErrorLinesThrowsProviderApiUnavailableOnTimeout() {
         mockServer.expect(requestTo(containsString(EXPECTED_PATH)))
                 .andExpect(method(HttpMethod.GET))
                 .andRespond(withException(new java.io.IOException("connection timed out")));

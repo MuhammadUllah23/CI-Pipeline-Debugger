@@ -148,11 +148,17 @@ public class GitHubLogsApiClient {
     }
 
     /**
-     * Reads lines from the current zip entry and returns those that start with
-     * {@code [ERROR]} or {@code ##[error]} after stripping the timestamp prefix.
+     * Reads lines from the current zip entry and returns the content of the
+     * failing step — everything from the last {@code ##[group]} marker before
+     * a {@code ##[error]} line through to the end of the entry, including both
+     * the group header and all {@code ##[error]} lines.
+     *
+     * Returns an empty list if no {@code ##[error]} line is found.
      */
     private List<String> extractErrorLinesFromEntry(ZipInputStream zipInputStream) throws IOException {
-        List<String> errorLines = new ArrayList<>();
+        List<String> currentGroupLines = new ArrayList<>();
+        List<String> errorGroupLines = new ArrayList<>();
+        boolean foundError = false;
 
         BufferedReader reader = new BufferedReader(
                 new InputStreamReader(zipInputStream, StandardCharsets.UTF_8));
@@ -160,12 +166,34 @@ public class GitHubLogsApiClient {
         String line;
         while ((line = reader.readLine()) != null) {
             String stripped = stripTimestamp(line);
-            if (stripped.startsWith("[ERROR]") || stripped.startsWith("##[error]")) {
-                errorLines.add(stripped);
+
+            if (stripped.startsWith("##[group]")) {
+                currentGroupLines = new ArrayList<>();
+                currentGroupLines.add(stripped);
+                continue;
+            }
+
+            if (stripped.startsWith("##[endgroup]")) {
+                continue;
+            }
+
+            if (stripped.startsWith("##[error]")) {
+                if (!foundError) {
+                    errorGroupLines = new ArrayList<>(currentGroupLines);
+                    foundError = true;
+                }
+                errorGroupLines.add(stripped);
+                continue;
+            }
+
+            if (foundError) {
+                errorGroupLines.add(stripped);
+            } else {
+                currentGroupLines.add(stripped);
             }
         }
 
-        return errorLines;
+        return errorGroupLines;
     }
 
     /**
