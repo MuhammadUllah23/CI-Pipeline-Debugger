@@ -165,7 +165,7 @@ public class GitHubLogsApiClient {
 
         String line;
         while ((line = reader.readLine()) != null) {
-            String stripped = stripTimestamp(line);
+            String stripped = stripAnsiCodes(stripTimestamp(line));
 
             if (stripped.startsWith("##[group]")) {
                 currentGroupLines = new ArrayList<>();
@@ -183,7 +183,7 @@ public class GitHubLogsApiClient {
                     foundError = true;
                 }
                 errorGroupLines.add(stripped);
-                continue;
+                return errorGroupLines;
             }
 
             if (foundError) {
@@ -194,6 +194,15 @@ public class GitHubLogsApiClient {
         }
 
         return errorGroupLines;
+    }
+
+    /**
+     * Strips ANSI terminal escape codes from a log line.
+     * GitHub Actions logs contain color codes like {@code [36;1m} and {@code [0m}
+     * that are meaningless outside a terminal.
+     */
+    private String stripAnsiCodes(String line) {
+        return line.replaceAll("\\x1B\\[[;\\d]*[A-Za-z]|\\[\\d+m", "");
     }
 
     /**

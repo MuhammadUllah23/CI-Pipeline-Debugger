@@ -77,8 +77,8 @@ class GitHubLogsApiClientTest {
     }
 
     @Test
-    @DisplayName("captures all error lines when multiple ##[error] lines present")
-    void fetchErrorLinesCapturesAllErrorLines() throws IOException {
+    @DisplayName("stops at first ##[error] line and does not capture subsequent ones")
+    void fetchErrorLinesStopsAtFirstErrorLine() throws IOException {
         String logContent = """
                 2026-04-01T02:31:11.379Z ##[group]Run mvn clean compile
                 2026-04-01T02:31:11.379Z [ERROR] First error
@@ -97,8 +97,8 @@ class GitHubLogsApiClientTest {
         assertThat(result.get("build")).containsExactly(
                 "##[group]Run mvn clean compile",
                 "[ERROR] First error",
-                "##[error]Process completed with exit code 1.",
-                "##[error]Another error occurred.");
+                "##[error]Process completed with exit code 1.");
+        assertThat(result.get("build")).noneMatch(line -> line.contains("Another error occurred"));
         mockServer.verify();
     }
 
@@ -291,6 +291,59 @@ class GitHubLogsApiClientTest {
                     assertThat(se.getDetails()).containsKey("cause");
                 });
 
+        mockServer.verify();
+    }
+
+    @Test
+    @DisplayName("does not include lines after ##[error] in snippet")
+    void fetchErrorLinesDoesNotIncludePostErrorLines() throws IOException {
+        String logContent = """
+                2026-04-01T02:31:11.379Z ##[group]Run mvn clean compile
+                2026-04-01T02:31:11.379Z [ERROR] No POM in this directory
+                2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
+                2026-04-01T02:31:11.379Z Post job cleanup.
+                2026-04-01T02:31:11.379Z [command]/usr/bin/git version
+                """;
+
+        byte[] zipBytes = buildZip(Map.of("0_build.txt", logContent));
+
+        mockServer.expect(requestTo(containsString(EXPECTED_PATH)))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(zipBytes, MediaType.APPLICATION_OCTET_STREAM));
+
+        Map<String, List<String>> result = client.fetchErrorLines(OWNER, REPO, RUN_ID);
+
+        assertThat(result.get("build")).containsExactly(
+                "##[group]Run mvn clean compile",
+                "[ERROR] No POM in this directory",
+                "##[error]Process completed with exit code 1.");
+        assertThat(result.get("build")).noneMatch(line -> line.contains("Post job cleanup"));
+        assertThat(result.get("build")).noneMatch(line -> line.contains("git version"));
+        mockServer.verify();
+    }
+
+    @Test
+    @DisplayName("strips ANSI escape codes from snippet lines")
+    void fetchErrorLinesStripsAnsiCodesFromSnippet() throws IOException {
+        String logContent = """
+                2026-04-01T02:31:11.379Z ##[group]Run npm run format:check
+                2026-04-01T02:31:11.379Z \u001B[36;1mnpm run format:check\u001B[0m
+                2026-04-01T02:31:11.379Z [[33mwarn[39m] Code style issues found in 16 files.
+                2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
+                """;
+
+        byte[] zipBytes = buildZip(Map.of("0_frontend.txt", logContent));
+
+        mockServer.expect(requestTo(containsString(EXPECTED_PATH)))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(zipBytes, MediaType.APPLICATION_OCTET_STREAM));
+
+        Map<String, List<String>> result = client.fetchErrorLines(OWNER, REPO, RUN_ID);
+
+        assertThat(result.get("frontend")).noneMatch(line -> line.contains("\u001B"));
+        assertThat(result.get("frontend")).noneMatch(line -> line.contains("[33m"));
+        assertThat(result.get("frontend")).noneMatch(line -> line.contains("[39m"));
+        assertThat(result.get("frontend")).anyMatch(line -> line.contains("Code style issues found in 16 files."));
         mockServer.verify();
     }
 
