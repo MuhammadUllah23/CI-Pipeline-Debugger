@@ -53,9 +53,11 @@ class GitHubLogsApiClientTest {
     void fetchErrorLinesReturnsGroupContextAndErrorLine() throws IOException {
         String logContent = """
                 2026-04-01T02:31:11.379Z ##[group]Run mvn clean compile
+                2026-04-01T02:31:11.379Z mvn clean compile
+                2026-04-01T02:31:11.379Z shell: /usr/bin/bash -e {0}
+                2026-04-01T02:31:11.379Z ##[endgroup]
                 2026-04-01T02:31:11.379Z [INFO] Scanning for projects...
                 2026-04-01T02:31:11.379Z [ERROR] No POM in this directory
-                2026-04-01T02:31:11.379Z ##[endgroup]
                 2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
                 """;
 
@@ -67,12 +69,44 @@ class GitHubLogsApiClientTest {
 
         Map<String, List<String>> result = client.fetchErrorLines(OWNER, REPO, RUN_ID);
 
-        assertThat(result).containsKey("build");
         assertThat(result.get("build")).containsExactly(
                 "##[group]Run mvn clean compile",
                 "[INFO] Scanning for projects...",
                 "[ERROR] No POM in this directory",
                 "##[error]Process completed with exit code 1.");
+        assertThat(result.get("build")).noneMatch(line -> line.startsWith("shell:"));
+        assertThat(result.get("build")).noneMatch(String::isBlank);
+        mockServer.verify();
+    }
+
+    @Test
+    @DisplayName("filters out shell declarations empty lines and command echoes")
+    void fetchErrorLinesFiltersNoiseLines() throws IOException {
+        String logContent = """
+                2026-04-01T02:31:11.379Z ##[group]Run mvn clean compile
+                2026-04-01T02:31:11.379Z mvn clean compile
+                2026-04-01T02:31:11.379Z shell: /usr/bin/bash -e {0}
+                2026-04-01T02:31:11.379Z [command]/usr/bin/git version
+                2026-04-01T02:31:11.379Z ##[endgroup]
+                2026-04-01T02:31:11.379Z [ERROR] No POM in this directory
+                2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
+                        """;
+
+        byte[] zipBytes = buildZip(Map.of("0_build.txt", logContent));
+
+        mockServer.expect(requestTo(containsString(EXPECTED_PATH)))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(zipBytes, MediaType.APPLICATION_OCTET_STREAM));
+
+        Map<String, List<String>> result = client.fetchErrorLines(OWNER, REPO, RUN_ID);
+
+        assertThat(result.get("build")).containsExactly(
+                "##[group]Run mvn clean compile",
+                "[ERROR] No POM in this directory",
+                "##[error]Process completed with exit code 1.");
+        assertThat(result.get("build")).noneMatch(line -> line.startsWith("shell:"));
+        assertThat(result.get("build")).noneMatch(line -> line.startsWith("[command]"));
+        assertThat(result.get("build")).noneMatch(String::isBlank);
         mockServer.verify();
     }
 
@@ -81,6 +115,8 @@ class GitHubLogsApiClientTest {
     void fetchErrorLinesStopsAtFirstErrorLine() throws IOException {
         String logContent = """
                 2026-04-01T02:31:11.379Z ##[group]Run mvn clean compile
+                2026-04-01T02:31:11.379Z mvn clean compile
+                2026-04-01T02:31:11.379Z ##[endgroup]
                 2026-04-01T02:31:11.379Z [ERROR] First error
                 2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
                 2026-04-01T02:31:11.379Z ##[error]Another error occurred.
@@ -107,9 +143,12 @@ class GitHubLogsApiClientTest {
     void fetchErrorLinesOnlyCapturesGroupContainingError() throws IOException {
         String logContent = """
                 2026-04-01T02:31:11.379Z ##[group]Checkout code
-                2026-04-01T02:31:11.379Z [INFO] Checking out repository
+                2026-04-01T02:31:11.379Z actions/checkout@v4
                 2026-04-01T02:31:11.379Z ##[endgroup]
+                2026-04-01T02:31:11.379Z [INFO] Checking out repository
                 2026-04-01T02:31:11.379Z ##[group]Run mvn clean compile
+                2026-04-01T02:31:11.379Z mvn clean compile
+                2026-04-01T02:31:11.379Z ##[endgroup]
                 2026-04-01T02:31:11.379Z [ERROR] No POM in this directory
                 2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
                 """;
@@ -157,11 +196,15 @@ class GitHubLogsApiClientTest {
     void fetchErrorLinesReturnsSnippetsFromAllJobs() throws IOException {
         String buildLog = """
                 2026-04-01T02:31:11.379Z ##[group]Run mvn clean compile
+                2026-04-01T02:31:11.379Z mvn clean compile
+                2026-04-01T02:31:11.379Z ##[endgroup]
                 2026-04-01T02:31:11.379Z [ERROR] Build failed
                 2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
                 """;
         String testLog = """
                 2026-04-01T02:31:11.379Z ##[group]Run tests
+                2026-04-01T02:31:11.379Z npm test
+                2026-04-01T02:31:11.379Z ##[endgroup]
                 2026-04-01T02:31:11.379Z [ERROR] Tests failed
                 2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
                 """;
@@ -299,6 +342,8 @@ class GitHubLogsApiClientTest {
     void fetchErrorLinesDoesNotIncludePostErrorLines() throws IOException {
         String logContent = """
                 2026-04-01T02:31:11.379Z ##[group]Run mvn clean compile
+                2026-04-01T02:31:11.379Z mvn clean compile
+                2026-04-01T02:31:11.379Z ##[endgroup]
                 2026-04-01T02:31:11.379Z [ERROR] No POM in this directory
                 2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
                 2026-04-01T02:31:11.379Z Post job cleanup.
