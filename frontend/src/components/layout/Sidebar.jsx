@@ -23,9 +23,7 @@ const navLinkStyle = ({ isActive }) => ({
 })
 
 export default function Sidebar() {
-  const [theme, setTheme] = useState(
-    () => localStorage.getItem('theme') || 'light'
-  )
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
 
   const { data: repos, isLoading } = useRepos()
 
@@ -35,14 +33,15 @@ export default function Sidebar() {
   }, [theme])
 
   function toggleTheme() {
-    setTheme(prev => (prev === 'light' ? 'dark' : 'light'))
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
   }
 
-  const reposByOwner = repos?.reduce((acc, repo) => {
-    if (!acc[repo.owner]) acc[repo.owner] = []
-    acc[repo.owner].push(repo)
-    return acc
-  }, {}) ?? {}
+  const reposByOwner =
+    repos?.reduce((acc, repo) => {
+      if (!acc[repo.owner]) acc[repo.owner] = []
+      acc[repo.owner].push(repo)
+      return acc
+    }, {}) ?? {}
 
   return (
     <aside
@@ -59,17 +58,12 @@ export default function Sidebar() {
           borderBottom: '0.5px solid var(--color-border)',
         }}
       >
-        <span
-          style={{ fontSize: '15px', fontWeight: '500', color: 'var(--color-accent)' }}
-        >
+        <span style={{ fontSize: '15px', fontWeight: '500', color: 'var(--color-accent)' }}>
           CI Debugger
         </span>
       </div>
 
-      <nav
-        className="flex flex-col flex-1"
-        style={{ padding: '8px 0', overflowY: 'auto' }}
-      >
+      <nav className="flex flex-col flex-1" style={{ padding: '8px 0', overflowY: 'auto' }}>
         <NavLink to="/" end style={navLinkStyle}>
           Dashboard
         </NavLink>
@@ -89,7 +83,7 @@ export default function Sidebar() {
               >
                 {owner}
               </p>
-              {ownerRepos.map(repo => (
+              {ownerRepos.map((repo) => (
                 <NavLink
                   key={repo.repo}
                   to={`/${repo.owner}/${repo.repo}`}
@@ -100,9 +94,7 @@ export default function Sidebar() {
                     padding: '5px 1rem 5px 1.25rem',
                     fontSize: '13px',
                     textDecoration: 'none',
-                    color: isActive
-                      ? 'var(--color-accent-text)'
-                      : 'var(--color-text-secondary)',
+                    color: isActive ? 'var(--color-accent-text)' : 'var(--color-text-secondary)',
                     background: isActive ? 'var(--color-accent-bg)' : 'transparent',
                     borderRight: isActive
                       ? '2px solid var(--color-accent)'
