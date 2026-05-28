@@ -32,10 +32,6 @@ export default function Sidebar() {
     localStorage.setItem('theme', theme)
   }, [theme])
 
-  function toggleTheme() {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
-  }
-
   const reposByOwner =
     repos?.reduce((acc, repo) => {
       if (!acc[repo.owner]) acc[repo.owner] = []
