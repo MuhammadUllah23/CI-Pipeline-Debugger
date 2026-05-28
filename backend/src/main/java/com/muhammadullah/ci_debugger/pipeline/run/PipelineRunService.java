@@ -16,6 +16,7 @@ import com.muhammadullah.ci_debugger.exception.ServiceException;
 import com.muhammadullah.ci_debugger.pipeline.pullrequest.PullRequest;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunUpsertRequest;
+import com.muhammadullah.ci_debugger.pipeline.run.dto.RepoStatusResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.RepoSummaryResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.RunSummaryResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.WorkflowSummaryResponse;
@@ -158,6 +159,19 @@ public class PipelineRunService {
                     return ServiceException.of(ErrorCode.PIPELINE_RUN_NOT_FOUND)
                             .addDetail("id", id);
                 });
+    }
+
+    /**
+     * Returns a summary of each repo's overall health based on the latest
+     * main branch run per workflow.
+     *
+     * @return a list of repo statuses ordered by owner and repo name
+     */
+    @Transactional(readOnly = true)
+    public List<RepoStatusResponse> listRepoStatuses() {
+        return repository.findRepoHealthSummaries().stream()
+                .map(RepoStatusResponse::from)
+                .toList();
     }
 
     private PipelineRun createNew(

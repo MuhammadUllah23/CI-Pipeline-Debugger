@@ -4,6 +4,7 @@ import com.muhammadullah.ci_debugger.exception.ErrorCode;
 import com.muhammadullah.ci_debugger.exception.ServiceException;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunUpsertRequest;
+import com.muhammadullah.ci_debugger.pipeline.run.dto.RepoStatusResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.RepoSummaryResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.RunSummaryResponse;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -45,8 +47,7 @@ class PipelineRunServiceTest {
                 owner,
                 repo,
                 "123456789",
-                PipelineRunStatus.COMPLETED
-        );
+                PipelineRunStatus.COMPLETED);
         run.setWorkflowName(workflowName);
         run.setBranch("main");
         run.setHeadSha("abc123");
@@ -75,8 +76,7 @@ class PipelineRunServiceTest {
         PipelineRun saved = buildRun("owner", "repo", "CI");
 
         when(repository.findByProviderAndOwnerAndRepoAndProviderRunId(
-                PipelineRunProvider.GITHUB, "owner", "repo", "123456789"
-        )).thenReturn(Optional.empty());
+                PipelineRunProvider.GITHUB, "owner", "repo", "123456789")).thenReturn(Optional.empty());
         when(repository.save(any(PipelineRun.class))).thenReturn(saved);
 
         PipelineRunResponse response = pipelineRunService.upsert(req);
@@ -312,8 +312,7 @@ class PipelineRunServiceTest {
         List<PipelineRun> runs = List.of(
                 buildRun("owner", "repo", "CI"),
                 buildRun("owner", "repo", "CI"),
-                buildRun("owner", "repo", "CI")
-        );
+                buildRun("owner", "repo", "CI"));
 
         when(repository.findRecentRunsPerWorkflow()).thenReturn(runs);
 
@@ -333,8 +332,7 @@ class PipelineRunServiceTest {
                 buildRun("owner", "repo", "CI"),
                 buildRun("owner", "repo", "CI"),
                 buildRun("owner", "repo", "Deploy"),
-                buildRun("owner", "repo", "Deploy")
-        );
+                buildRun("owner", "repo", "Deploy"));
 
         when(repository.findRecentRunsPerWorkflow()).thenReturn(runs);
 
@@ -352,8 +350,7 @@ class PipelineRunServiceTest {
                 buildRun("owner", "repo-a", "CI"),
                 buildRun("owner", "repo-a", "CI"),
                 buildRun("owner", "repo-b", "CI"),
-                buildRun("owner", "repo-b", "CI")
-        );
+                buildRun("owner", "repo-b", "CI"));
 
         when(repository.findRecentRunsPerWorkflow()).thenReturn(runs);
 
@@ -383,8 +380,7 @@ class PipelineRunServiceTest {
     void listByRepoHappyPathReturnsMappedPage() {
         List<PipelineRun> runs = List.of(
                 buildRun("owner", "repo", "CI"),
-                buildRun("owner", "repo", "CI")
-        );
+                buildRun("owner", "repo", "CI"));
         Page<PipelineRun> page = new PageImpl<>(runs, PageRequest.of(0, 20), 2);
 
         when(repository.findMainBranchRunsByOwnerAndRepo(eq("owner"), eq("repo"), any())).thenReturn(page);
@@ -452,5 +448,73 @@ class PipelineRunServiceTest {
                     assertThat(se.getErrorCode()).isEqualTo(ErrorCode.PIPELINE_RUN_NOT_FOUND);
                     assertThat(se.getDetails()).containsKey("id");
                 });
+    }
+
+    // ── listRepoStatuses ───────────────────────────────────────────────────
+
+    @Test
+    void listRepoStatusesHappyPathReturnsMappedResponses() {
+        RepoHealthSummary summary = mock(RepoHealthSummary.class);
+        when(summary.getOwner()).thenReturn("owner");
+        when(summary.getRepo()).thenReturn("repo");
+        when(summary.getOverallConclusion()).thenReturn("SUCCESS");
+
+        when(repository.findRepoHealthSummaries()).thenReturn(List.of(summary));
+
+        List<RepoStatusResponse> result = pipelineRunService.listRepoStatuses();
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getOwner()).isEqualTo("owner");
+        assertThat(result.get(0).getRepo()).isEqualTo("repo");
+        assertThat(result.get(0).getOverallConclusion()).isEqualTo(PipelineRunConclusion.SUCCESS);
+        verify(repository).findRepoHealthSummaries();
+    }
+
+    @Test
+    void listRepoStatusesEmptyRepositoryReturnsEmptyList() {
+        when(repository.findRepoHealthSummaries()).thenReturn(List.of());
+
+        List<RepoStatusResponse> result = pipelineRunService.listRepoStatuses();
+
+        assertThat(result).isEmpty();
+        verify(repository).findRepoHealthSummaries();
+    }
+
+    @Test
+    void listRepoStatusesNullConclusionMapsToNull() {
+        RepoHealthSummary summary = mock(RepoHealthSummary.class);
+        when(summary.getOwner()).thenReturn("owner");
+        when(summary.getRepo()).thenReturn("repo");
+        when(summary.getOverallConclusion()).thenReturn(null);
+
+        when(repository.findRepoHealthSummaries()).thenReturn(List.of(summary));
+
+        List<RepoStatusResponse> result = pipelineRunService.listRepoStatuses();
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getOverallConclusion()).isNull();
+    }
+
+    @Test
+    void listRepoStatusesMultipleReposReturnsAllMapped() {
+        RepoHealthSummary summary1 = mock(RepoHealthSummary.class);
+        when(summary1.getOwner()).thenReturn("owner");
+        when(summary1.getRepo()).thenReturn("repo-a");
+        when(summary1.getOverallConclusion()).thenReturn("SUCCESS");
+
+        RepoHealthSummary summary2 = mock(RepoHealthSummary.class);
+        when(summary2.getOwner()).thenReturn("owner");
+        when(summary2.getRepo()).thenReturn("repo-b");
+        when(summary2.getOverallConclusion()).thenReturn("FAILURE");
+
+        when(repository.findRepoHealthSummaries()).thenReturn(List.of(summary1, summary2));
+
+        List<RepoStatusResponse> result = pipelineRunService.listRepoStatuses();
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getRepo()).isEqualTo("repo-a");
+        assertThat(result.get(0).getOverallConclusion()).isEqualTo(PipelineRunConclusion.SUCCESS);
+        assertThat(result.get(1).getRepo()).isEqualTo("repo-b");
+        assertThat(result.get(1).getOverallConclusion()).isEqualTo(PipelineRunConclusion.FAILURE);
     }
 }
