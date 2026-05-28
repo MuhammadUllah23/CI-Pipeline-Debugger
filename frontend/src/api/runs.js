@@ -30,6 +30,12 @@ async function fetchRunClusters(id) {
   return res.json()
 }
 
+async function fetchRepos() {
+  const res = await fetch('/api/repos')
+  if (!res.ok) throw new Error(`Failed to fetch repos: ${res.status}`)
+  return res.json()
+}
+
 export function useRuns() {
   return useQuery({
     queryKey: ['runs'],
@@ -62,5 +68,12 @@ export function useRunClusters(id) {
   return useQuery({
     queryKey: ['runs', id, 'clusters'],
     queryFn: () => fetchRunClusters(id),
+  })
+}
+
+export function useRepos() {
+  return useQuery({
+    queryKey: ['repos'],
+    queryFn: fetchRepos,
   })
 }
