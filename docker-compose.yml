@@ -1,4 +1,3 @@
-version: "3.8"
 
 services:
   postgres:
@@ -18,6 +17,26 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  backend:
+    build: ./backend
+    container_name: ci_debugger_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_URL: jdbc:postgresql://postgres:5432/ci_debugger
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
+      GITHUB_API_TOKEN: ${GITHUB_API_TOKEN}
+      GITHUB_API_CONNECT_TIMEOUT_MS: ${GITHUB_API_CONNECT_TIMEOUT_MS}
+      GITHUB_API_READ_TIMEOUT_MS: ${GITHUB_API_READ_TIMEOUT_MS}
+      JOB_SCHEDULER_INTERVAL_MS: ${JOB_SCHEDULER_INTERVAL_MS}
+    ports:
+      - "8080:8080"
 
 volumes:
   ci_debugger_pgdata:
