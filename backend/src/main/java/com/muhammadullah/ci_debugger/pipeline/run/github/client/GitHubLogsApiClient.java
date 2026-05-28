@@ -149,7 +149,7 @@ public class GitHubLogsApiClient {
 
     /**
      * Reads lines from the current zip entry and returns the content of the
-     * failing step — everything from the last {@code ##[group]} marker before
+     * failing step and everything from the last {@code ##[group]} marker before
      * a {@code ##[error]} line through to the end of the entry, including both
      * the group header and all {@code ##[error]} lines.
      *
