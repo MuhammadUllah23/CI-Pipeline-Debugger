@@ -36,7 +36,7 @@ public class PipelineRunController {
 
     /**
      * Returns all repos grouped by owner, repo, workflowName,
-     * with the 5 most recent runs per workflow.
+     * with the 5 most recent runs per workflow
      */
     @GetMapping()
     public List<RepoSummaryResponse> listGrouped() {
