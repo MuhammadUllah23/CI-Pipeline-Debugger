@@ -3,13 +3,11 @@ import { IconChevronUp, IconChevronDown } from '@tabler/icons-react'
 import PrCard from './PrCard.jsx'
 
 function repoHealth(prs) {
-  return prs.some(pr => pr.runs.some(r => r.conclusion === 'FAILURE'))
+  return prs.some((pr) => pr.runs.some((r) => r.conclusion === 'FAILURE'))
 }
 
 function repoSummary(prs) {
-  const failingCount = prs.filter(pr =>
-    pr.runs.some(r => r.conclusion === 'FAILURE')
-  ).length
+  const failingCount = prs.filter((pr) => pr.runs.some((r) => r.conclusion === 'FAILURE')).length
   const count = `${prs.length} open ${prs.length === 1 ? 'PR' : 'PRs'}`
   return failingCount > 0 ? `${count} · ${failingCount} failing` : `${count} · all passing`
 }
@@ -21,7 +19,7 @@ export default function RepoSection({ repo, prs }) {
   return (
     <div style={{ marginBottom: '10px' }}>
       <div
-        onClick={() => setExpanded(prev => !prev)}
+        onClick={() => setExpanded((prev) => !prev)}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -51,10 +49,11 @@ export default function RepoSection({ repo, prs }) {
             {repoSummary(prs)}
           </span>
         </div>
-        {expanded
-          ? <IconChevronUp size={16} color='var(--color-text-secondary)' />
-          : <IconChevronDown size={16} color='var(--color-text-secondary)' />
-        }
+        {expanded ? (
+          <IconChevronUp size={16} color="var(--color-text-secondary)" />
+        ) : (
+          <IconChevronDown size={16} color="var(--color-text-secondary)" />
+        )}
       </div>
 
       {expanded && (

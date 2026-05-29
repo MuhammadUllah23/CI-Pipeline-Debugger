@@ -1,7 +1,7 @@
 export default function PageHeader({ title, subtitle }) {
   return (
     <div
-    style={{
+      style={{
         padding: '0 1.5rem',
         background: 'var(--color-bg-sidebar)',
         borderBottom: '0.5px solid var(--color-border)',
@@ -9,7 +9,7 @@ export default function PageHeader({ title, subtitle }) {
         alignItems: 'center',
         gap: '12px',
         height: '72px',
-    }}
+      }}
     >
       <div
         style={{
@@ -21,13 +21,20 @@ export default function PageHeader({ title, subtitle }) {
         }}
       />
       <div>
-        <h1 style={{ fontSize: '20px', fontWeight: '500', margin: '0 0 3px', color: 'var(--color-text-primary)' }}>
-        {title}
+        <h1
+          style={{
+            fontSize: '20px',
+            fontWeight: '500',
+            margin: '0 0 3px',
+            color: 'var(--color-text-primary)',
+          }}
+        >
+          {title}
         </h1>
         {subtitle && (
-        <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', margin: 0 }}>
+          <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', margin: 0 }}>
             {subtitle}
-        </p>
+          </p>
         )}
       </div>
     </div>

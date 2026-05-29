@@ -8,12 +8,20 @@ function conclusionIcon(conclusion) {
 
 function chipStyle(conclusion) {
   if (conclusion === 'FAILURE')
-    return { background: 'var(--color-fail-bg)', color: 'var(--color-fail-text)', borderColor: 'var(--color-fail-bar)' }
-  return { background: 'var(--color-pass-bg)', color: 'var(--color-pass-text)', borderColor: 'var(--color-pass-bar)' }
+    return {
+      background: 'var(--color-fail-bg)',
+      color: 'var(--color-fail-text)',
+      borderColor: 'var(--color-fail-bar)',
+    }
+  return {
+    background: 'var(--color-pass-bg)',
+    color: 'var(--color-pass-text)',
+    borderColor: 'var(--color-pass-bar)',
+  }
 }
 
 function isFailing(runs) {
-  return runs.some(r => r.conclusion === 'FAILURE')
+  return runs.some((r) => r.conclusion === 'FAILURE')
 }
 
 export default function PrCard({ pr }) {
@@ -48,7 +56,14 @@ export default function PrCard({ pr }) {
             <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
               #{pr.prNumber}
             </span>
-            <p style={{ fontSize: '13px', fontWeight: '500', color: 'var(--color-text-primary)', margin: 0 }}>
+            <p
+              style={{
+                fontSize: '13px',
+                fontWeight: '500',
+                color: 'var(--color-text-primary)',
+                margin: 0,
+              }}
+            >
               {pr.title}
             </p>
           </div>
@@ -69,7 +84,7 @@ export default function PrCard({ pr }) {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-        {pr.runs.map(run => (
+        {pr.runs.map((run) => (
           <div
             key={run.id}
             style={{
