@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom'
-import { IconCheck, IconX, IconGitBranch } from '@tabler/icons-react'
+import { IconCheck, IconX, IconClock, IconGitBranch } from '@tabler/icons-react'
 
 function conclusionIcon(conclusion) {
   if (conclusion === 'FAILURE') return <IconX size={11} />
-  return <IconCheck size={11} />
+  if (conclusion === 'SUCCESS') return <IconCheck size={11} />
+  return <IconClock size={11} />
 }
 
 function chipStyle(conclusion) {
@@ -13,10 +14,16 @@ function chipStyle(conclusion) {
       color: 'var(--color-fail-text)',
       borderColor: 'var(--color-fail-bar)',
     }
+  if (conclusion === 'SUCCESS')
+    return {
+      background: 'var(--color-pass-bg)',
+      color: 'var(--color-pass-text)',
+      borderColor: 'var(--color-pass-bar)',
+    }
   return {
-    background: 'var(--color-pass-bg)',
-    color: 'var(--color-pass-text)',
-    borderColor: 'var(--color-pass-bar)',
+    background: 'var(--color-progress-bg)',
+    color: 'var(--color-progress-text)',
+    borderColor: 'var(--color-progress-bar)',
   }
 }
 
