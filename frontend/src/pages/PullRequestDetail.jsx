@@ -16,7 +16,7 @@ function statePillStyle(state) {
 
 function getLatestPerWorkflow(runs) {
   const seen = new Set()
-  return runs.filter(run => {
+  return runs.filter((run) => {
     if (seen.has(run.workflowName)) return false
     seen.add(run.workflowName)
     return true
