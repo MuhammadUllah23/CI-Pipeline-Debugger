@@ -18,10 +18,17 @@ async function fetchRepoPullRequests(owner, repo, status, page) {
   return res.json()
 }
 
+async function fetchRunSets(id, page) {
+  const res = await fetch(`/api/pull-requests/${id}/run-sets?page=${page}`)
+  if (!res.ok) throw new Error(`Failed to fetch run sets: ${res.status}`)
+  return res.json()
+}
+
 export function useOpenPullRequests() {
   return useQuery({
     queryKey: ['pull-requests', 'open'],
     queryFn: fetchOpenPullRequests,
+    refetchInterval: 30000,
   })
 }
 
@@ -29,6 +36,7 @@ export function usePullRequest(id, page) {
   return useQuery({
     queryKey: ['pull-requests', id, page],
     queryFn: () => fetchPullRequest(id, page),
+    refetchInterval: 30000,
   })
 }
 
@@ -36,5 +44,13 @@ export function useRepoPullRequests(owner, repo, status, page) {
   return useQuery({
     queryKey: ['pull-requests', owner, repo, status, page],
     queryFn: () => fetchRepoPullRequests(owner, repo, status, page),
+  })
+}
+
+export function useRunSets(id, page) {
+  return useQuery({
+    queryKey: ['pull-requests', id, 'run-sets', page],
+    queryFn: () => fetchRunSets(id, page),
+    refetchInterval: 30000,
   })
 }

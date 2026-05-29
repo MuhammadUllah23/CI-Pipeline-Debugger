@@ -105,4 +105,37 @@ public interface PipelineRunRepository extends JpaRepository<PipelineRun, UUID> 
             ORDER BY owner, repo
             """, nativeQuery = true)
     List<RepoHealthSummary> findRepoHealthSummaries();
+
+    /**
+     * Returns distinct head SHAs for a pull request ordered by most recent
+     * first. One entry per commit — used to paginate run history by commit set.
+     */
+    @Query(value = """
+            SELECT head_sha
+            FROM pipeline_run
+            WHERE pr_id = :prId
+            GROUP BY head_sha
+            ORDER BY MIN(started_at) DESC
+            """, countQuery = """
+            SELECT COUNT(DISTINCT head_sha)
+            FROM pipeline_run
+            WHERE pr_id = :prId
+            """, nativeQuery = true)
+    Page<String> findDistinctHeadShasByPrId(
+            @Param("prId") UUID prId,
+            Pageable pageable);
+
+    /**
+     * Returns all runs for a pull request whose head SHA is in the given list,
+     * ordered by started_at DESC.
+     */
+    @Query("""
+            SELECT r FROM PipelineRun r
+            WHERE r.pullRequest.id = :prId
+            AND r.headSha IN :headShas
+            ORDER BY r.startedAt DESC
+            """)
+    List<PipelineRun> findByPullRequestIdAndHeadShaIn(
+            @Param("prId") UUID prId,
+            @Param("headShas") List<String> headShas);
 }

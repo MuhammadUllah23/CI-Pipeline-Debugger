@@ -8,6 +8,8 @@ import com.muhammadullah.ci_debugger.pipeline.run.PipelineRun;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunProvider;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunRepository;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunStatus;
+import com.muhammadullah.ci_debugger.pipeline.run.dto.CommitRunSetResponse;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -278,5 +280,72 @@ class PullRequestServiceTest {
                 PullRequestState.OPEN, 0);
 
         assertThat(result.getContent()).isEmpty();
+    }
+
+    // ── listRunSets ────────────────────────────────────────────────────────
+
+    @Test
+    void listRunSetsHappyPathReturnsMappedSets() {
+        UUID prId = UUID.randomUUID();
+        pipelineRun.setHeadSha("abc1234");
+        pipelineRun.setStartedAt(Instant.now().minusSeconds(120));
+
+        Page<String> headShasPage = new PageImpl<>(List.of("abc1234"));
+
+        when(pipelineRunRepository.findDistinctHeadShasByPrId(eq(prId), any(PageRequest.class)))
+                .thenReturn(headShasPage);
+        when(pipelineRunRepository.findByPullRequestIdAndHeadShaIn(eq(prId), any()))
+                .thenReturn(List.of(pipelineRun));
+
+        Page<CommitRunSetResponse> result = pullRequestService.listRunSets(prId, 0);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getHeadSha()).isEqualTo("abc1234");
+        assertThat(result.getContent().get(0).getRuns()).hasSize(1);
+        verify(pipelineRunRepository).findDistinctHeadShasByPrId(eq(prId), any(PageRequest.class));
+        verify(pipelineRunRepository).findByPullRequestIdAndHeadShaIn(eq(prId), any());
+    }
+
+    @Test
+    void listRunSetsEmptyHeadShasReturnsEmptyPage() {
+        UUID prId = UUID.randomUUID();
+
+        when(pipelineRunRepository.findDistinctHeadShasByPrId(eq(prId), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        Page<CommitRunSetResponse> result = pullRequestService.listRunSets(prId, 0);
+
+        assertThat(result.getContent()).isEmpty();
+        verify(pipelineRunRepository, never()).findByPullRequestIdAndHeadShaIn(any(), any());
+    }
+
+    @Test
+    void listRunSetsMultipleShasGroupsRunsCorrectly() {
+        UUID prId = UUID.randomUUID();
+
+        PipelineRun run1 = new PipelineRun(PipelineRunProvider.GITHUB, "owner", "repo", "111",
+                PipelineRunStatus.COMPLETED);
+        run1.setId(UUID.randomUUID());
+        run1.setHeadSha("sha1");
+        run1.setStartedAt(Instant.now().minusSeconds(60));
+        run1.setPullRequest(pullRequest);
+
+        PipelineRun run2 = new PipelineRun(PipelineRunProvider.GITHUB, "owner", "repo", "222",
+                PipelineRunStatus.COMPLETED);
+        run2.setId(UUID.randomUUID());
+        run2.setHeadSha("sha2");
+        run2.setStartedAt(Instant.now().minusSeconds(120));
+        run2.setPullRequest(pullRequest);
+
+        when(pipelineRunRepository.findDistinctHeadShasByPrId(eq(prId), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of("sha1", "sha2")));
+        when(pipelineRunRepository.findByPullRequestIdAndHeadShaIn(eq(prId), any()))
+                .thenReturn(List.of(run1, run2));
+
+        Page<CommitRunSetResponse> result = pullRequestService.listRunSets(prId, 0);
+
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getContent().get(0).getHeadSha()).isEqualTo("sha1");
+        assertThat(result.getContent().get(1).getHeadSha()).isEqualTo("sha2");
     }
 }

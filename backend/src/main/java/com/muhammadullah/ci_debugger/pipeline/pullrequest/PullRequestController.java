@@ -2,6 +2,7 @@ package com.muhammadullah.ci_debugger.pipeline.pullrequest;
 
 import com.muhammadullah.ci_debugger.pipeline.pullrequest.dto.PullRequestResponse;
 import com.muhammadullah.ci_debugger.pipeline.pullrequest.dto.PullRequestSummaryResponse;
+import com.muhammadullah.ci_debugger.pipeline.run.dto.CommitRunSetResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,5 +58,13 @@ public class PullRequestController {
 
         log.info("GET /api/pull-requests/{}/{} status={} page={}", owner, repo, status, page);
         return ResponseEntity.ok(pullRequestService.listByRepo(owner, repo, state, page));
+    }
+
+    @GetMapping("/{id}/run-sets")
+    public ResponseEntity<Page<CommitRunSetResponse>> listRunSets(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "0") int page) {
+        log.info("GET /api/pull-requests/{}/run-sets page={}", id, page);
+        return ResponseEntity.ok(pullRequestService.listRunSets(id, page));
     }
 }

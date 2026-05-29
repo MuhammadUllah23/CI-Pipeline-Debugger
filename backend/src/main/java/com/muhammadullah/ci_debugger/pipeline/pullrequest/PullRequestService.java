@@ -6,23 +6,28 @@ import com.muhammadullah.ci_debugger.pipeline.pullrequest.dto.PullRequestRespons
 import com.muhammadullah.ci_debugger.pipeline.pullrequest.dto.PullRequestSummaryResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRun;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunRepository;
+import com.muhammadullah.ci_debugger.pipeline.run.dto.CommitRunSetResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class PullRequestService {
 
     private static final Logger log = LoggerFactory.getLogger(PullRequestService.class);
     private static final int PR_RUNS_PAGE_SIZE = 20;
+    private static final int COMMIT_SET_PAGE_SIZE = 10;
 
     private final PullRequestRepository pullRequestRepository;
     private final PipelineRunRepository pipelineRunRepository;
@@ -44,8 +49,7 @@ public class PullRequestService {
         List<PipelineRun> runs = pipelineRunRepository.findLatestRunPerWorkflowForOpenPullRequests();
 
         return runs.stream()
-                .collect(java.util.stream.Collectors.groupingBy(
-                        run -> run.getPullRequest().getId()))
+                .collect(Collectors.groupingBy(run -> run.getPullRequest().getId()))
                 .values()
                 .stream()
                 .map(prRuns -> PullRequestResponse.from(prRuns.get(0).getPullRequest(), prRuns))
@@ -58,8 +62,7 @@ public class PullRequestService {
      * @param id   the pull request ID
      * @param page zero-based page number
      * @return the pull request with paginated runs
-     * @throws ServiceException with {@link ErrorCode#DB_RECORD_NOT_FOUND} if not
-     *                          found
+     * @throws ServiceException with {@link ErrorCode#DB_RECORD_NOT_FOUND} if not found
      */
     @Transactional(readOnly = true)
     public PullRequestResponse findById(UUID id, int page) {
@@ -77,14 +80,46 @@ public class PullRequestService {
     }
 
     /**
+     * Returns a paginated list of commit run sets for a pull request.
+     * Each set groups all workflow runs triggered by the same commit.
+     *
+     * @param prId the pull request ID
+     * @param page zero-based page number
+     * @return a page of commit run sets ordered by most recent commit first
+     */
+    @Transactional(readOnly = true)
+    public Page<CommitRunSetResponse> listRunSets(UUID prId, int page) {
+        Page<String> headShas = pipelineRunRepository.findDistinctHeadShasByPrId(
+                prId, PageRequest.of(page, COMMIT_SET_PAGE_SIZE));
+
+        if (headShas.isEmpty()) {
+            return Page.empty();
+        }
+
+        List<PipelineRun> runs = pipelineRunRepository.findByPullRequestIdAndHeadShaIn(
+                prId, headShas.getContent());
+
+        Map<String, List<PipelineRun>> grouped = runs.stream()
+                .collect(Collectors.groupingBy(PipelineRun::getHeadSha));
+
+        List<CommitRunSetResponse> sets = headShas.getContent().stream()
+                .map(sha -> {
+                    List<PipelineRun> shaRuns = grouped.getOrDefault(sha, List.of());
+                    Instant startedAt = shaRuns.stream()
+                            .map(PipelineRun::getStartedAt)
+                            .filter(t -> t != null)
+                            .min(Instant::compareTo)
+                            .orElse(null);
+                    return CommitRunSetResponse.from(sha, startedAt, shaRuns);
+                })
+                .toList();
+
+        return new PageImpl<>(sets, PageRequest.of(page, COMMIT_SET_PAGE_SIZE), headShas.getTotalElements());
+    }
+
+    /**
      * Finds an existing pull request by provider identity or creates a minimal
      * row with just the identity fields if one does not exist.
-     *
-     * @param provider the CI provider (e.g. "GITHUB")
-     * @param owner    the repository owner
-     * @param repo     the repository name
-     * @param prNumber the pull request number
-     * @return the existing or newly created pull request
      */
     public PullRequest findOrCreate(String provider, String owner, String repo, int prNumber) {
         return pullRequestRepository
@@ -109,13 +144,6 @@ public class PullRequestService {
 
     /**
      * Updates the state of a pull request when it is closed or merged.
-     *
-     * @param provider the CI provider
-     * @param owner    the repository owner
-     * @param repo     the repository name
-     * @param prNumber the pull request number
-     * @param mergedAt the merge timestamp, or {@code null} if the PR was closed
-     *                 without merging
      */
     @Transactional
     public void updateState(String provider, String owner, String repo, int prNumber, Instant mergedAt) {
@@ -132,12 +160,6 @@ public class PullRequestService {
 
     /**
      * Returns a paginated list of pull requests for a given repo filtered by state.
-     *
-     * @param owner the repository owner
-     * @param repo  the repository name
-     * @param state the PR state to filter by
-     * @param page  zero-based page number
-     * @return a page of pull request summaries
      */
     @Transactional(readOnly = true)
     public Page<PullRequestSummaryResponse> listByRepo(String owner, String repo, PullRequestState state, int page) {
