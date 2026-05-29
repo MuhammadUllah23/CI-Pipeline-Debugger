@@ -154,58 +154,58 @@ public class GitHubLogsApiClient {
      * <p>
      * Returns an empty list if no {@code ##[error]} line is found.
      */
-private List<String> extractErrorLinesFromEntry(ZipInputStream zipInputStream) throws IOException {
-    List<String> currentGroupLines = new ArrayList<>();
-    List<String> errorGroupLines = new ArrayList<>();
-    boolean foundError = false;
-    boolean skippedCommandEcho = true;
-    boolean capturedMeaningfulLines = false;
-    String currentGroupHeader = "";
+    private List<String> extractErrorLinesFromEntry(ZipInputStream zipInputStream) throws IOException {
+        List<String> currentGroupLines = new ArrayList<>();
+        List<String> errorGroupLines = new ArrayList<>();
+        boolean foundError = false;
+        boolean skippedCommandEcho = true;
+        boolean capturedMeaningfulLines = false;
+        String currentGroupHeader = "";
 
-    BufferedReader reader = new BufferedReader(
-            new InputStreamReader(zipInputStream, StandardCharsets.UTF_8));
+        BufferedReader reader = new BufferedReader(
+                new InputStreamReader(zipInputStream, StandardCharsets.UTF_8));
 
-    String line;
-    while ((line = reader.readLine()) != null) {
-        String stripped = stripAnsiCodes(stripTimestamp(line));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String stripped = stripAnsiCodes(stripTimestamp(line));
 
-        if (stripped.startsWith("##[group]")) {
-            if (!capturedMeaningfulLines) {
-                currentGroupHeader = stripped;
-                skippedCommandEcho = false;
+            if (stripped.startsWith("##[group]")) {
+                if (!capturedMeaningfulLines) {
+                    currentGroupHeader = stripped;
+                    skippedCommandEcho = false;
+                }
+                continue;
             }
-            continue;
-        }
 
-        if (stripped.startsWith("##[endgroup]")) {
-            continue;
-        }
-
-        if (stripped.startsWith("##[error]")) {
-            if (!foundError) {
-                errorGroupLines = new ArrayList<>(currentGroupLines);
-                foundError = true;
+            if (stripped.startsWith("##[endgroup]")) {
+                continue;
             }
-            errorGroupLines.add(stripped);
-            return errorGroupLines;
-        }
 
-        if (!skippedCommandEcho) {
-            skippedCommandEcho = true;
-            continue;
-        }
-
-        if (isMeaningfulLine(stripped)) {
-            if (!capturedMeaningfulLines) {
-                currentGroupLines.add(currentGroupHeader);
-                capturedMeaningfulLines = true;
+            if (stripped.startsWith("##[error]")) {
+                if (!foundError) {
+                    errorGroupLines = new ArrayList<>(currentGroupLines);
+                    foundError = true;
+                }
+                errorGroupLines.add(stripped);
+                return errorGroupLines;
             }
-            currentGroupLines.add(stripped);
+
+            if (!skippedCommandEcho) {
+                skippedCommandEcho = true;
+                continue;
+            }
+
+            if (isMeaningfulLine(stripped)) {
+                if (!capturedMeaningfulLines) {
+                    currentGroupLines.add(currentGroupHeader);
+                    capturedMeaningfulLines = true;
+                }
+                currentGroupLines.add(stripped);
+            }
         }
+
+        return errorGroupLines;
     }
-
-    return errorGroupLines;
-}
 
     /**
      * Returns true for lines that carry actionable error information worth
