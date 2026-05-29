@@ -9,15 +9,13 @@ async function fetchClusters() {
 async function fetchCluster(id) {
   const res = await fetch(`/api/clusters/${id}`)
   if (!res.ok) throw new Error(`Failed to fetch cluster: ${res.status}`)
-  return res.json()
-}
+  return res.json()}
 
 export function useClusters() {
   return useQuery({
     queryKey: ['clusters'],
     queryFn: fetchClusters,
-  })
-}
+  })}
 
 export function useCluster(id) {
   return useQuery({
