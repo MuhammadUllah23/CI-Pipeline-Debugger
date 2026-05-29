@@ -71,11 +71,9 @@ class GitHubLogsApiClientTest {
 
         assertThat(result.get("build")).containsExactly(
                 "##[group]Run mvn clean compile",
-                "[INFO] Scanning for projects...",
                 "[ERROR] No POM in this directory",
                 "##[error]Process completed with exit code 1.");
-        assertThat(result.get("build")).noneMatch(line -> line.startsWith("shell:"));
-        assertThat(result.get("build")).noneMatch(String::isBlank);
+        assertThat(result.get("build")).noneMatch(line -> line.startsWith("[INFO]"));
         mockServer.verify();
     }
 
@@ -166,6 +164,7 @@ class GitHubLogsApiClientTest {
                 "[ERROR] No POM in this directory",
                 "##[error]Process completed with exit code 1.");
         assertThat(result.get("build")).noneMatch(line -> line.contains("Checkout code"));
+        assertThat(result.get("build")).noneMatch(line -> line.startsWith("[INFO]"));
         mockServer.verify();
     }
 
@@ -388,7 +387,8 @@ class GitHubLogsApiClientTest {
         assertThat(result.get("frontend")).noneMatch(line -> line.contains("\u001B"));
         assertThat(result.get("frontend")).noneMatch(line -> line.contains("[33m"));
         assertThat(result.get("frontend")).noneMatch(line -> line.contains("[39m"));
-        assertThat(result.get("frontend")).anyMatch(line -> line.contains("Code style issues found in 16 files."));
+        assertThat(result.get("frontend"))
+                .anyMatch(line -> line.contains("Code style issues found in 16 files."));
         mockServer.verify();
     }
 
