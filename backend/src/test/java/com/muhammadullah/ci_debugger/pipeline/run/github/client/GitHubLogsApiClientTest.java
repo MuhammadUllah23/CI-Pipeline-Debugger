@@ -71,11 +71,9 @@ class GitHubLogsApiClientTest {
 
         assertThat(result.get("build")).containsExactly(
                 "##[group]Run mvn clean compile",
-                "[INFO] Scanning for projects...",
                 "[ERROR] No POM in this directory",
                 "##[error]Process completed with exit code 1.");
-        assertThat(result.get("build")).noneMatch(line -> line.startsWith("shell:"));
-        assertThat(result.get("build")).noneMatch(String::isBlank);
+        assertThat(result.get("build")).noneMatch(line -> line.startsWith("[INFO]"));
         mockServer.verify();
     }
 
@@ -88,9 +86,10 @@ class GitHubLogsApiClientTest {
                 2026-04-01T02:31:11.379Z shell: /usr/bin/bash -e {0}
                 2026-04-01T02:31:11.379Z [command]/usr/bin/git version
                 2026-04-01T02:31:11.379Z ##[endgroup]
+                2026-04-01T02:31:11.379Z [INFO] Scanning for projects...
                 2026-04-01T02:31:11.379Z [ERROR] No POM in this directory
                 2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
-                        """;
+                """;
 
         byte[] zipBytes = buildZip(Map.of("0_build.txt", logContent));
 
@@ -106,7 +105,7 @@ class GitHubLogsApiClientTest {
                 "##[error]Process completed with exit code 1.");
         assertThat(result.get("build")).noneMatch(line -> line.startsWith("shell:"));
         assertThat(result.get("build")).noneMatch(line -> line.startsWith("[command]"));
-        assertThat(result.get("build")).noneMatch(String::isBlank);
+        assertThat(result.get("build")).noneMatch(line -> line.startsWith("[INFO]"));
         mockServer.verify();
     }
 
@@ -166,6 +165,7 @@ class GitHubLogsApiClientTest {
                 "[ERROR] No POM in this directory",
                 "##[error]Process completed with exit code 1.");
         assertThat(result.get("build")).noneMatch(line -> line.contains("Checkout code"));
+        assertThat(result.get("build")).noneMatch(line -> line.startsWith("[INFO]"));
         mockServer.verify();
     }
 
