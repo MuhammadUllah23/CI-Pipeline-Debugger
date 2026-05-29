@@ -134,7 +134,7 @@ class PullRequestServiceTest {
         UUID prId = UUID.randomUUID();
         Page<PipelineRun> emptyPage = new PageImpl<>(List.of());
 
-        when(pullRequestRepository.findById(prId)).thenReturn(Optional.of(pullRequest));
+        when(pullRequestRepository.findById(prId)).thenReturn(null);
         when(pipelineRunRepository.findByPullRequestIdOrderByCreatedAtDesc(
                 eq(prId), any(PageRequest.class)))
                 .thenReturn(emptyPage);
