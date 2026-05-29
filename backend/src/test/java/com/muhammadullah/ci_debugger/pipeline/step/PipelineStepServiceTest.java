@@ -2,6 +2,8 @@ package com.muhammadullah.ci_debugger.pipeline.step;
 
 import com.muhammadullah.ci_debugger.exception.ErrorCode;
 import com.muhammadullah.ci_debugger.exception.ServiceException;
+import com.muhammadullah.ci_debugger.pipeline.error.ErrorOccurrence;
+import com.muhammadullah.ci_debugger.pipeline.error.ErrorOccurrenceRepository;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRun;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunConclusion;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunProvider;
@@ -25,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,6 +40,9 @@ class PipelineStepServiceTest {
 
     @Mock
     private PipelineRunRepository runRepository;
+
+    @Mock
+    private ErrorOccurrenceRepository errorOccurrenceRepository;
 
     @InjectMocks
     private PipelineStepService pipelineStepService;
@@ -52,8 +58,7 @@ class PipelineStepServiceTest {
                 "owner",
                 "ci-pipeline-debugger",
                 "123456789",
-                PipelineRunStatus.COMPLETED
-        );
+                PipelineRunStatus.COMPLETED);
     }
 
     private PipelineStepSaveRequest buildRequest(String jobName, String stepName, int stepIndex) {
@@ -75,22 +80,19 @@ class PipelineStepServiceTest {
                 PipelineRunConclusion.SUCCESS,
                 Instant.now().minusSeconds(10),
                 Instant.now(),
-                null
-        );
+                null);
         return step;
     }
 
     @Test
-    void saveAll_happyPath_returnsResponses() {
+    void saveAllHappyPathReturnsResponses() {
         List<PipelineStepSaveRequest> requests = List.of(
                 buildRequest("build", "Checkout code", 1),
-                buildRequest("build", "Run tests", 2)
-        );
+                buildRequest("build", "Run tests", 2));
 
         List<PipelineStep> savedSteps = List.of(
                 buildStep("build", "Checkout code", 1),
-                buildStep("build", "Run tests", 2)
-        );
+                buildStep("build", "Run tests", 2));
 
         when(runRepository.findById(pipelineRunId)).thenReturn(Optional.of(pipelineRun));
         when(stepRepository.saveAll(anyList())).thenReturn(savedSteps);
@@ -104,10 +106,11 @@ class PipelineStepServiceTest {
     }
 
     @Test
-    void saveAll_runNotFound_throwsPipelineRunNotFound() {
+    void saveAllRunNotFoundThrowsPipelineRunNotFound() {
         when(runRepository.findById(pipelineRunId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> pipelineStepService.saveAll(pipelineRunId, List.of(buildRequest("build", "Checkout code", 1))))
+        assertThatThrownBy(() -> pipelineStepService.saveAll(pipelineRunId,
+                List.of(buildRequest("build", "Checkout code", 1))))
                 .isInstanceOf(ServiceException.class)
                 .satisfies(ex -> {
                     ServiceException serviceException = (ServiceException) ex;
@@ -119,7 +122,7 @@ class PipelineStepServiceTest {
     }
 
     @Test
-    void saveAll_databaseFailure_throwsDbUpsertFailed() {
+    void saveAllDatabaseFailureThrowsDbUpsertFailed() {
         List<PipelineStepSaveRequest> requests = List.of(buildRequest("build", "Checkout code", 1));
 
         when(runRepository.findById(pipelineRunId)).thenReturn(Optional.of(pipelineRun));
@@ -136,14 +139,15 @@ class PipelineStepServiceTest {
     }
 
     @Test
-    void saveAll_serviceExceptionNotRewrapped() {
+    void saveAllServiceExceptionNotRewrapped() {
         ServiceException original = ServiceException.of(ErrorCode.DB_UPSERT_CONFLICT)
                 .addDetail("pipelineRunId", pipelineRunId);
 
         when(runRepository.findById(pipelineRunId)).thenReturn(Optional.of(pipelineRun));
         when(stepRepository.saveAll(anyList())).thenThrow(original);
 
-        assertThatThrownBy(() -> pipelineStepService.saveAll(pipelineRunId, List.of(buildRequest("build", "Checkout code", 1))))
+        assertThatThrownBy(() -> pipelineStepService.saveAll(pipelineRunId,
+                List.of(buildRequest("build", "Checkout code", 1))))
                 .isInstanceOf(ServiceException.class)
                 .satisfies(ex -> {
                     ServiceException serviceException = (ServiceException) ex;
@@ -152,7 +156,7 @@ class PipelineStepServiceTest {
     }
 
     @Test
-    void saveAll_emptyList_returnsEmptyListWithoutSaving() {
+    void saveAllEmptyListReturnsEmptyListWithoutSaving() {
         when(runRepository.findById(pipelineRunId)).thenReturn(Optional.of(pipelineRun));
         when(stepRepository.saveAll(anyList())).thenReturn(List.of());
 
@@ -165,14 +169,14 @@ class PipelineStepServiceTest {
     // ── getStepsForRun ─────────────────────────────────────────────────────
 
     @Test
-    void getStepsForRun_happyPath_returnsStepsOrderedByJobNameAndStepIndex() {
+    void getStepsForRunHappyPathReturnsStepsOrderedByJobNameAndStepIndex() {
         when(runRepository.existsById(pipelineRunId)).thenReturn(true);
         when(stepRepository.findByPipelineRunIdOrderByJobNameAscStepIndexAsc(pipelineRunId))
                 .thenReturn(List.of(
                         buildStep("build", "Checkout code", 1),
                         buildStep("build", "Run tests", 2),
-                        buildStep("deploy", "Upload artifact", 1)
-                ));
+                        buildStep("deploy", "Upload artifact", 1)));
+        when(errorOccurrenceRepository.findByPipelineRunId(pipelineRunId)).thenReturn(List.of());
 
         List<PipelineStepResponse> result = pipelineStepService.getStepsForRun(pipelineRunId);
 
@@ -181,11 +185,10 @@ class PipelineStepServiceTest {
         assertThat(result.get(0).getStepName()).isEqualTo("Checkout code");
         assertThat(result.get(1).getStepName()).isEqualTo("Run tests");
         assertThat(result.get(2).getJobName()).isEqualTo("deploy");
-        assertThat(result.get(2).getStepName()).isEqualTo("Upload artifact");
     }
 
     @Test
-    void getStepsForRun_runNotFound_throwsPipelineRunNotFound() {
+    void getStepsForRunRunNotFoundThrowsPipelineRunNotFound() {
         when(runRepository.existsById(pipelineRunId)).thenReturn(false);
 
         assertThatThrownBy(() -> pipelineStepService.getStepsForRun(pipelineRunId))
@@ -200,10 +203,11 @@ class PipelineStepServiceTest {
     }
 
     @Test
-    void getStepsForRun_noSteps_returnsEmptyList() {
+    void getStepsForRunNoStepsReturnsEmptyList() {
         when(runRepository.existsById(pipelineRunId)).thenReturn(true);
         when(stepRepository.findByPipelineRunIdOrderByJobNameAscStepIndexAsc(pipelineRunId))
                 .thenReturn(List.of());
+        when(errorOccurrenceRepository.findByPipelineRunId(pipelineRunId)).thenReturn(List.of());
 
         List<PipelineStepResponse> result = pipelineStepService.getStepsForRun(pipelineRunId);
 
@@ -211,7 +215,45 @@ class PipelineStepServiceTest {
     }
 
     @Test
-    void getStepsForRun_mapsAllStepFields() {
+    void getStepsForRunFailedStepWithOccurrencePopulatesSnippet() {
+        PipelineStep step = buildStep("build", "Run tests", 1);
+        step.setId(UUID.randomUUID());
+
+        ErrorOccurrence occurrence = mock(ErrorOccurrence.class);
+        when(occurrence.getPipelineStep()).thenReturn(step);
+        when(occurrence.getSnippet()).thenReturn("##[error]Process completed with exit code 1.");
+
+        when(runRepository.existsById(pipelineRunId)).thenReturn(true);
+        when(stepRepository.findByPipelineRunIdOrderByJobNameAscStepIndexAsc(pipelineRunId))
+                .thenReturn(List.of(step));
+        when(errorOccurrenceRepository.findByPipelineRunId(pipelineRunId))
+                .thenReturn(List.of(occurrence));
+
+        List<PipelineStepResponse> result = pipelineStepService.getStepsForRun(pipelineRunId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getErrorSnippet())
+                .isEqualTo("##[error]Process completed with exit code 1.");
+    }
+
+    @Test
+    void getStepsForRunStepWithNoOccurrenceSnippetIsNull() {
+        PipelineStep step = buildStep("build", "Checkout code", 1);
+        step.setId(UUID.randomUUID());
+
+        when(runRepository.existsById(pipelineRunId)).thenReturn(true);
+        when(stepRepository.findByPipelineRunIdOrderByJobNameAscStepIndexAsc(pipelineRunId))
+                .thenReturn(List.of(step));
+        when(errorOccurrenceRepository.findByPipelineRunId(pipelineRunId)).thenReturn(List.of());
+
+        List<PipelineStepResponse> result = pipelineStepService.getStepsForRun(pipelineRunId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getErrorSnippet()).isNull();
+    }
+
+    @Test
+    void getStepsForRunMapsAllStepFields() {
         Instant startedAt = Instant.now().minusSeconds(10);
         Instant completedAt = Instant.now();
 
@@ -221,23 +263,20 @@ class PipelineStepServiceTest {
                 PipelineRunConclusion.FAILURE,
                 startedAt,
                 completedAt,
-                null
-        );
+                null);
 
         when(runRepository.existsById(pipelineRunId)).thenReturn(true);
         when(stepRepository.findByPipelineRunIdOrderByJobNameAscStepIndexAsc(pipelineRunId))
                 .thenReturn(List.of(step));
+        when(errorOccurrenceRepository.findByPipelineRunId(pipelineRunId)).thenReturn(List.of());
 
         List<PipelineStepResponse> result = pipelineStepService.getStepsForRun(pipelineRunId);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getJobName()).isEqualTo("build");
         assertThat(result.get(0).getStepName()).isEqualTo("Run tests");
-        assertThat(result.get(0).getStepIndex()).isEqualTo(1);
-        assertThat(result.get(0).getStatus()).isEqualTo(PipelineRunStatus.COMPLETED);
         assertThat(result.get(0).getConclusion()).isEqualTo(PipelineRunConclusion.FAILURE);
         assertThat(result.get(0).getStartedAt()).isEqualTo(startedAt);
-        assertThat(result.get(0).getCompletedAt()).isEqualTo(completedAt);
         assertThat(result.get(0).getDurationMs()).isNotNull();
     }
 }

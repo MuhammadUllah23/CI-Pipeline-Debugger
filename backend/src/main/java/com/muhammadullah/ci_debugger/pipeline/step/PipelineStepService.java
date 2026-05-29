@@ -2,6 +2,8 @@ package com.muhammadullah.ci_debugger.pipeline.step;
 
 import com.muhammadullah.ci_debugger.exception.ErrorCode;
 import com.muhammadullah.ci_debugger.exception.ServiceException;
+import com.muhammadullah.ci_debugger.pipeline.error.ErrorOccurrence;
+import com.muhammadullah.ci_debugger.pipeline.error.ErrorOccurrenceRepository;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRun;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunConclusion;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunRepository;
@@ -14,7 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class PipelineStepService {
@@ -23,12 +27,15 @@ public class PipelineStepService {
 
     private final PipelineStepRepository stepRepository;
     private final PipelineRunRepository runRepository;
+    private final ErrorOccurrenceRepository errorOccurrenceRepository;
 
     public PipelineStepService(
             PipelineStepRepository stepRepository,
-            PipelineRunRepository runRepository) {
+            PipelineRunRepository runRepository,
+            ErrorOccurrenceRepository errorOccurrenceRepository) {
         this.stepRepository = stepRepository;
         this.runRepository = runRepository;
+        this.errorOccurrenceRepository = errorOccurrenceRepository;
     }
 
     /**
@@ -102,9 +109,20 @@ public class PipelineStepService {
                     .addDetail("pipelineRunId", pipelineRunId);
         }
 
-        return stepRepository.findByPipelineRunIdOrderByJobNameAscStepIndexAsc(pipelineRunId)
+        List<PipelineStep> steps = stepRepository
+                .findByPipelineRunIdOrderByJobNameAscStepIndexAsc(pipelineRunId);
+
+        Map<UUID, String> snippetByStepId = errorOccurrenceRepository
+                .findByPipelineRunId(pipelineRunId)
                 .stream()
-                .map(PipelineStepResponse::from)
+                .filter(occ -> occ.getPipelineStep() != null && occ.getSnippet() != null)
+                .collect(Collectors.toMap(
+                        occ -> occ.getPipelineStep().getId(),
+                        ErrorOccurrence::getSnippet,
+                        (a, b) -> a));
+
+        return steps.stream()
+                .map(step -> PipelineStepResponse.from(step, snippetByStepId.get(step.getId())))
                 .toList();
     }
 
