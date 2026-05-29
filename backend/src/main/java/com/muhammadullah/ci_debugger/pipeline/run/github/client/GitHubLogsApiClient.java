@@ -159,6 +159,8 @@ public class GitHubLogsApiClient {
         List<String> errorGroupLines = new ArrayList<>();
         boolean foundError = false;
         boolean skippedCommandEcho = true;
+        boolean capturedMeaningfulLines = false;
+        String currentGroupHeader = "";
 
         BufferedReader reader = new BufferedReader(
                 new InputStreamReader(zipInputStream, StandardCharsets.UTF_8));
@@ -168,9 +170,10 @@ public class GitHubLogsApiClient {
             String stripped = stripAnsiCodes(stripTimestamp(line));
 
             if (stripped.startsWith("##[group]")) {
-                currentGroupLines = new ArrayList<>();
-                currentGroupLines.add(stripped);
-                skippedCommandEcho = false;
+                if (!capturedMeaningfulLines) {
+                    currentGroupHeader = stripped;
+                    skippedCommandEcho = false;
+                }
                 continue;
             }
 
@@ -192,13 +195,11 @@ public class GitHubLogsApiClient {
                 continue;
             }
 
-            if (isNoiseLine(stripped)) {
-                continue;
-            }
-
-            if (foundError) {
-                errorGroupLines.add(stripped);
-            } else {
+            if (isMeaningfulLine(stripped)) {
+                if (!capturedMeaningfulLines) {
+                    currentGroupLines.add(currentGroupHeader);
+                    capturedMeaningfulLines = true;
+                }
                 currentGroupLines.add(stripped);
             }
         }
@@ -207,21 +208,14 @@ public class GitHubLogsApiClient {
     }
 
     /**
-     * Returns true for lines that are GitHub Actions metadata noise —
-     * shell declarations, empty lines, and command echoes that add no
-     * debugging value to the snippet.
+     * Returns true for lines that carry actionable error information worth
+     * including in the snippet. Only {@code [ERROR]} and {@code [warn]} prefixed
+     * lines are considered meaningful — everything else is noise.
      */
-    private boolean isNoiseLine(String line) {
-        if (line.isBlank()) {
-            return true;
-        }
-        if (line.startsWith("shell:")) {
-            return true;
-        }
-        if (line.startsWith("[command]")) {
-            return true;
-        }
-        return false;
+    private boolean isMeaningfulLine(String line) {
+        return line.startsWith("[ERROR]")
+                || line.startsWith("[warn]")
+                || line.startsWith("Error:");
     }
 
     /**

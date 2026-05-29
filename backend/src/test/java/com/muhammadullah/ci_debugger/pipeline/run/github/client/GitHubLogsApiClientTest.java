@@ -71,11 +71,9 @@ class GitHubLogsApiClientTest {
 
         assertThat(result.get("build")).containsExactly(
                 "##[group]Run mvn clean compile",
-                "[INFO] Scanning for projects...",
                 "[ERROR] No POM in this directory",
                 "##[error]Process completed with exit code 1.");
-        assertThat(result.get("build")).noneMatch(line -> line.startsWith("shell:"));
-        assertThat(result.get("build")).noneMatch(String::isBlank);
+        assertThat(result.get("build")).noneMatch(line -> line.startsWith("[INFO]"));
         mockServer.verify();
     }
 
@@ -88,9 +86,10 @@ class GitHubLogsApiClientTest {
                 2026-04-01T02:31:11.379Z shell: /usr/bin/bash -e {0}
                 2026-04-01T02:31:11.379Z [command]/usr/bin/git version
                 2026-04-01T02:31:11.379Z ##[endgroup]
+                2026-04-01T02:31:11.379Z [INFO] Scanning for projects...
                 2026-04-01T02:31:11.379Z [ERROR] No POM in this directory
                 2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
-                        """;
+                """;
 
         byte[] zipBytes = buildZip(Map.of("0_build.txt", logContent));
 
@@ -106,7 +105,7 @@ class GitHubLogsApiClientTest {
                 "##[error]Process completed with exit code 1.");
         assertThat(result.get("build")).noneMatch(line -> line.startsWith("shell:"));
         assertThat(result.get("build")).noneMatch(line -> line.startsWith("[command]"));
-        assertThat(result.get("build")).noneMatch(String::isBlank);
+        assertThat(result.get("build")).noneMatch(line -> line.startsWith("[INFO]"));
         mockServer.verify();
     }
 
@@ -166,6 +165,7 @@ class GitHubLogsApiClientTest {
                 "[ERROR] No POM in this directory",
                 "##[error]Process completed with exit code 1.");
         assertThat(result.get("build")).noneMatch(line -> line.contains("Checkout code"));
+        assertThat(result.get("build")).noneMatch(line -> line.startsWith("[INFO]"));
         mockServer.verify();
     }
 
@@ -389,6 +389,37 @@ class GitHubLogsApiClientTest {
         assertThat(result.get("frontend")).noneMatch(line -> line.contains("[33m"));
         assertThat(result.get("frontend")).noneMatch(line -> line.contains("[39m"));
         assertThat(result.get("frontend")).anyMatch(line -> line.contains("Code style issues found in 16 files."));
+        mockServer.verify();
+    }
+
+    @Test
+    @DisplayName("does not reset captured error lines when post job cleanup group appears")
+    void fetchErrorLinesDoesNotResetOnPostJobCleanupGroup() throws IOException {
+        String logContent = """
+                2026-04-01T02:31:11.379Z ##[group]Run mvn test
+                2026-04-01T02:31:11.379Z mvn test
+                2026-04-01T02:31:11.379Z ##[endgroup]
+                2026-04-01T02:31:11.379Z [ERROR] Tests run: 14, Failures: 3, Errors: 0
+                2026-04-01T02:31:11.379Z [ERROR] Failed to execute goal
+                2026-04-01T02:31:11.379Z ##[group]Post job cleanup
+                2026-04-01T02:31:11.379Z ##[endgroup]
+                2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
+                """;
+
+        byte[] zipBytes = buildZip(Map.of("0_build.txt", logContent));
+
+        mockServer.expect(requestTo(containsString(EXPECTED_PATH)))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(zipBytes, MediaType.APPLICATION_OCTET_STREAM));
+
+        Map<String, List<String>> result = client.fetchErrorLines(OWNER, REPO, RUN_ID);
+
+        assertThat(result.get("build")).containsExactly(
+                "##[group]Run mvn test",
+                "[ERROR] Tests run: 14, Failures: 3, Errors: 0",
+                "[ERROR] Failed to execute goal",
+                "##[error]Process completed with exit code 1.");
+        assertThat(result.get("build")).noneMatch(line -> line.contains("Post job cleanup"));
         mockServer.verify();
     }
 
