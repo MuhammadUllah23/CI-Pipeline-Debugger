@@ -147,7 +147,6 @@ class GitHubLogsApiClientTest {
                 2026-04-01T02:31:11.379Z ##[group]Run mvn clean compile
                 2026-04-01T02:31:11.379Z mvn clean compile
                 2026-04-01T02:31:11.379Z ##[endgroup]
-                2026-04-01T02:31:11.379Z [ERROR] No POM in this directory
                 2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
                 """;
 
