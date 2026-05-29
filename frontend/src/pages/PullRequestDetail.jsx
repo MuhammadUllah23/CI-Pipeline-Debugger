@@ -1,26 +1,10 @@
 import { useParams, Link } from 'react-router-dom'
 import { useState } from 'react'
-import { usePullRequest } from '../api/pullRequests.js'
+import { usePullRequest, useRunSets } from '../api/pullRequests.js'
 import PageHeader from '../components/ui/PageHeader.jsx'
 import RunSet from '../components/pr/RunSet.jsx'
-import { IconGitBranch } from '@tabler/icons-react'
 import Pagination from '../components/ui/Pagination.jsx'
-
-function groupByHeadSha(runs) {
-  const groups = []
-  const seen = new Map()
-
-  for (const run of runs) {
-    const key = run.headSha
-    if (!seen.has(key)) {
-      seen.set(key, [])
-      groups.push(seen.get(key))
-    }
-    seen.get(key).push(run)
-  }
-
-  return groups
-}
+import { IconGitBranch } from '@tabler/icons-react'
 
 function statePillStyle(state) {
   if (state === 'OPEN')
@@ -30,12 +14,23 @@ function statePillStyle(state) {
   return { background: 'var(--color-bg-card)', color: 'var(--color-text-secondary)' }
 }
 
+function getLatestPerWorkflow(runs) {
+  const seen = new Set()
+  return runs.filter(run => {
+    if (seen.has(run.workflowName)) return false
+    seen.add(run.workflowName)
+    return true
+  })
+}
+
 export default function PullRequestDetail() {
   const { id } = useParams()
   const [page, setPage] = useState(0)
-  const { data: pr, isLoading, isError } = usePullRequest(id, page)
 
-  if (isLoading) {
+  const { data: pr, isLoading: prLoading, isError: prError } = usePullRequest(id, 0)
+  const { data: runSets, isLoading: setsLoading } = useRunSets(id, page)
+
+  if (prLoading) {
     return (
       <div style={{ padding: '2rem', fontSize: '14px', color: 'var(--color-text-secondary)' }}>
         Loading...
@@ -43,7 +38,7 @@ export default function PullRequestDetail() {
     )
   }
 
-  if (isError || !pr) {
+  if (prError || !pr) {
     return (
       <div style={{ padding: '2rem', fontSize: '14px', color: 'var(--color-fail-text)' }}>
         Something went wrong loading this pull request.
@@ -51,9 +46,9 @@ export default function PullRequestDetail() {
     )
   }
 
-  const groups = groupByHeadSha(pr.runs)
-  const latestGroup = groups[0] ?? []
-  const allGroups = groups
+  const latestRuns = getLatestPerWorkflow(pr.runs ?? [])
+  const sets = runSets?.content ?? []
+  const totalPages = runSets?.totalPages ?? 1
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -100,6 +95,7 @@ export default function PullRequestDetail() {
           </span>
         }
       />
+
       <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
         <p
           style={{
@@ -112,9 +108,11 @@ export default function PullRequestDetail() {
         >
           Latest checks
         </p>
-        <div style={{ marginBottom: '1.5rem' }}>
-          <RunSet runs={latestGroup} isLatest={true} />
-        </div>
+        {latestRuns.length > 0 && (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <RunSet runs={latestRuns} isLatest={true} defaultExpanded={true} />
+          </div>
+        )}
 
         <p
           style={{
@@ -127,17 +125,23 @@ export default function PullRequestDetail() {
         >
           Run history
         </p>
-        {allGroups.map((group, index) => (
-          <RunSet
-            key={group[0].headSha}
-            runs={group}
-            isLatest={index === 0}
-            defaultExpanded={false}
-          />
-        ))}
+
+        {setsLoading ? (
+          <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>Loading...</p>
+        ) : (
+          sets.map((set, index) => (
+            <RunSet
+              key={set.headSha}
+              runs={set.runs}
+              isLatest={page === 0 && index === 0}
+              defaultExpanded={false}
+            />
+          ))
+        )}
+
         <Pagination
           page={page}
-          hasMore={pr.runs.length === 20}
+          hasMore={page < totalPages - 1}
           onPrevious={() => setPage((p) => p - 1)}
           onNext={() => setPage((p) => p + 1)}
         />
