@@ -51,6 +51,5 @@ export function useRunSets(id, page) {
   return useQuery({
     queryKey: ['pull-requests', id, 'run-sets', page],
     queryFn: () => fetchRunSets(id, page),
-    refetchInterval: 30000,
-  })
+    refetchInterval: 30000,})
 }
