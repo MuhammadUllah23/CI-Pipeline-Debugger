@@ -127,9 +127,13 @@ export default function PullRequestDetail() {
           Run history
         </p>
         {allGroups.map((group, index) => (
-          <RunSet key={group[0].headSha} runs={group} isLatest={index === 0} />
+          <RunSet
+            key={group[0].headSha}
+            runs={group}
+            isLatest={index === 0}
+            defaultExpanded={false}
+          />
         ))}
-
         {pr.runs.length === 20 && (
           <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '1rem' }}>
             <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}>
