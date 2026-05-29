@@ -95,7 +95,7 @@ export default function PrCard({ pr }) {
           <div
             key={run.id}
             style={{
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: '4px',
               padding: '3px 8px',
