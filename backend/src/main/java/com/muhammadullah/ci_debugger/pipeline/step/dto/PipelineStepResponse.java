@@ -20,6 +20,7 @@ public class PipelineStepResponse {
     private Instant completedAt;
     private Long durationMs;
     private Instant createdAt;
+    private String errorSnippet;
 
     public static PipelineStepResponse from(PipelineStep step) {
         PipelineStepResponse response = new PipelineStepResponse();
@@ -34,6 +35,12 @@ public class PipelineStepResponse {
         response.completedAt = step.getCompletedAt();
         response.durationMs = step.getDurationMs();
         response.createdAt = step.getCreatedAt();
+        return response;
+    }
+
+    public static PipelineStepResponse from(PipelineStep step, String errorSnippet) {
+        PipelineStepResponse response = from(step);
+        response.errorSnippet = errorSnippet;
         return response;
     }
 
@@ -80,4 +87,9 @@ public class PipelineStepResponse {
     public Instant getCreatedAt() {
         return createdAt;
     }
+
+    public String getErrorSnippet() {
+        return errorSnippet;
+    }
+
 }

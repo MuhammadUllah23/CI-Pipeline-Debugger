@@ -50,8 +50,11 @@ export default function Sidebar() {
     >
       <div
         style={{
-          padding: '1.25rem 1rem',
+          padding: '0 1rem',
           borderBottom: '0.5px solid var(--color-border)',
+          height: '72px',
+          display: 'flex',
+          alignItems: 'center',
         }}
       >
         <span style={{ fontSize: '15px', fontWeight: '500', color: 'var(--color-accent)' }}>
