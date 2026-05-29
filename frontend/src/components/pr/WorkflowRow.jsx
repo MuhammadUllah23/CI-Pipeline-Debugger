@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { IconCheck, IconX } from '@tabler/icons-react'
+import { IconCheck, IconX, IconClock } from '@tabler/icons-react'
 import { formatDuration } from '../../utils/format.js'
 
 function statusStyle(conclusion) {
