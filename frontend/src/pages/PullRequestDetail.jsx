@@ -4,6 +4,7 @@ import { usePullRequest } from '../api/pullRequests.js'
 import PageHeader from '../components/ui/PageHeader.jsx'
 import RunSet from '../components/pr/RunSet.jsx'
 import { IconGitBranch } from '@tabler/icons-react'
+import Pagination from '../components/ui/Pagination.jsx'
 
 function groupByHeadSha(runs) {
   const groups = []
@@ -134,14 +135,12 @@ export default function PullRequestDetail() {
             defaultExpanded={false}
           />
         ))}
-        {pr.runs.length === 20 && (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '1rem' }}>
-            <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}>
-              Previous
-            </button>
-            <button onClick={() => setPage((p) => p + 1)}>Next</button>
-          </div>
-        )}
+        <Pagination
+          page={page}
+          hasMore={pr.runs.length === 20}
+          onPrevious={() => setPage((p) => p - 1)}
+          onNext={() => setPage((p) => p + 1)}
+        />
       </div>
     </div>
   )
