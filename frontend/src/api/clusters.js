@@ -15,8 +15,7 @@ export function useClusters() {
   return useQuery({
     queryKey: ['clusters'],
     queryFn: fetchClusters,
-  })
-}
+  })}
 
 export function useCluster(id) {
   return useQuery({
