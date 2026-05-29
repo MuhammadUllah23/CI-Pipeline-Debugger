@@ -192,14 +192,12 @@ public class GitHubLogsApiClient {
                 continue;
             }
 
-            if (isNoiseLine(stripped)) {
-                continue;
-            }
-
-            if (foundError) {
-                errorGroupLines.add(stripped);
-            } else {
-                currentGroupLines.add(stripped);
+            if (isMeaningfulLine(stripped)) {
+                if (foundError) {
+                    errorGroupLines.add(stripped);
+                } else {
+                    currentGroupLines.add(stripped);
+                }
             }
         }
 
@@ -207,21 +205,14 @@ public class GitHubLogsApiClient {
     }
 
     /**
-     * Returns true for lines that are GitHub Actions metadata noise —
-     * shell declarations, empty lines, and command echoes that add no
-     * debugging value to the snippet.
+     * Returns true for lines that carry actionable error information worth
+     * including in the snippet. Only {@code [ERROR]} and {@code [warn]} prefixed
+     * lines are considered meaningful — everything else is noise.
      */
-    private boolean isNoiseLine(String line) {
-        if (line.isBlank()) {
-            return true;
-        }
-        if (line.startsWith("shell:")) {
-            return true;
-        }
-        if (line.startsWith("[command]")) {
-            return true;
-        }
-        return false;
+    private boolean isMeaningfulLine(String line) {
+        return line.startsWith("[ERROR]")
+                || line.startsWith("[warn]")
+                || line.startsWith("Error:");
     }
 
     /**
