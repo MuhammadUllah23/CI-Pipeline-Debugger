@@ -22,6 +22,7 @@ export function useOpenPullRequests() {
   return useQuery({
     queryKey: ['pull-requests', 'open'],
     queryFn: fetchOpenPullRequests,
+    refetchInterval: 30000,
   })
 }
 
@@ -29,6 +30,7 @@ export function usePullRequest(id, page) {
   return useQuery({
     queryKey: ['pull-requests', id, page],
     queryFn: () => fetchPullRequest(id, page),
+    refetchInterval: 30000,
   })
 }
 
