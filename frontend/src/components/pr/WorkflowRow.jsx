@@ -75,7 +75,13 @@ export default function WorkflowRow({ run }) {
           ...statusStyle(run.conclusion),
         }}
       >
-        {run.conclusion === 'FAILURE' ? <IconX size={11} /> : run.conclusion === 'SUCCESS' ? <IconCheck size={11} /> : <IconClock size={11} />}
+        {run.conclusion === 'FAILURE' ? (
+          <IconX size={11} />
+        ) : run.conclusion === 'SUCCESS' ? (
+          <IconCheck size={11} />
+        ) : (
+          <IconClock size={11} />
+        )}
         {statusLabel(run.conclusion)}
       </span>
     </div>

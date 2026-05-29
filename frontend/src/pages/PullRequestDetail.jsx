@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { useState } from 'react'
 import { usePullRequest } from '../api/pullRequests.js'
 import PageHeader from '../components/ui/PageHeader.jsx'
@@ -77,13 +77,28 @@ export default function PullRequestDetail() {
           </div>
         }
         subtitle={
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <Link
+              to={`/${pr.owner}/${pr.repo}`}
+              style={{
+                color: 'var(--color-text-secondary)',
+                textDecoration: 'underline',
+                textUnderlineOffset: '2px',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {pr.owner}/{pr.repo}
+            </Link>
+            <span style={{ color: 'var(--color-text-muted)' }}>→</span>
+            <span style={{ color: 'var(--color-text-primary)', fontWeight: '500' }}>
+              PR #{pr.prNumber} · {pr.title}
+            </span>
+            <span style={{ color: 'var(--color-text-muted)' }}>·</span>
             <IconGitBranch size={12} />
-            {pr.headBranch} · {pr.repo}
+            {pr.headBranch}
           </span>
         }
       />
-
       <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
         <p
           style={{
