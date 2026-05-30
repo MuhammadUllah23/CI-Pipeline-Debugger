@@ -54,13 +54,27 @@ export function useRunSteps(id) {
   return useQuery({
     queryKey: ['runs', id, 'steps'],
     queryFn: () => fetchRunSteps(id),
+    refetchInterval: (query) => {
+      const data = query.state.data
+      if (!data || data.length === 0) return 3000
+      const hasUnresolvedFailure = data.some(
+        (step) => step.conclusion === 'FAILURE' && !step.errorSnippet
+      )
+      if (hasUnresolvedFailure) return 3000
+      return false
+    },
   })
 }
 
-export function useRunClusters(id) {
+export function useRunClusters(id, conclusion) {
   return useQuery({
     queryKey: ['runs', id, 'clusters'],
     queryFn: () => fetchRunClusters(id),
+    refetchInterval: (query) => {
+      const data = query.state.data
+      if (conclusion === 'FAILURE' && (!data || data.length === 0)) return 5000
+      return false
+    },
   })
 }
 

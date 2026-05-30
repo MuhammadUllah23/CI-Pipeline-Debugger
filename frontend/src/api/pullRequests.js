@@ -44,6 +44,7 @@ export function useRepoPullRequests(owner, repo, status, page) {
   return useQuery({
     queryKey: ['pull-requests', owner, repo, status, page],
     queryFn: () => fetchRepoPullRequests(owner, repo, status, page),
+    refetchInterval: 30000,
   })
 }
 

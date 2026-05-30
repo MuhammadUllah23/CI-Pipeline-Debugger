@@ -36,7 +36,7 @@ export default function RunDetail() {
   const { id } = useParams()
   const { data: run, isLoading: runLoading, isError: runError } = useRun(id)
   const { data: steps, isLoading: stepsLoading } = useRunSteps(id)
-  const { data: clusters } = useRunClusters(id)
+  const { data: clusters } = useRunClusters(id, run?.conclusion)
 
   if (runLoading) {
     return (
@@ -206,8 +206,12 @@ export default function RunDetail() {
           Steps
         </p>
 
-        {stepsLoading ? (
-          <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>Loading steps...</p>
+        {stepsLoading || (steps ?? []).length === 0 ? (
+          <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
+            {run.status === 'COMPLETED' && (steps ?? []).length === 0
+              ? 'Fetching step data...'
+              : 'Loading steps...'}
+          </p>
         ) : (
           [...jobGroups.entries()].map(([jobName, jobSteps]) => (
             <JobSection key={jobName} jobName={jobName} steps={jobSteps} />
