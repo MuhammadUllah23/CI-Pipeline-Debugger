@@ -138,4 +138,22 @@ public interface PipelineRunRepository extends JpaRepository<PipelineRun, UUID> 
     List<PipelineRun> findByPullRequestIdAndHeadShaIn(
             @Param("prId") UUID prId,
             @Param("headShas") List<String> headShas);
+
+    /**
+     * Returns the latest run per workflow for each pull request in the given list.
+     */
+    @Query(value = """
+            SELECT r.* FROM pipeline_run r
+            WHERE r.pr_id IN :prIds
+            AND r.id = (
+                SELECT r2.id FROM pipeline_run r2
+                WHERE r2.pr_id = r.pr_id
+                AND r2.workflow_name = r.workflow_name
+                ORDER BY r2.created_at DESC
+                LIMIT 1
+            )
+            ORDER BY r.created_at DESC
+            """, nativeQuery = true)
+    List<PipelineRun> findLatestRunPerWorkflowForPrIds(
+            @Param("prIds") List<UUID> prIds);
 }

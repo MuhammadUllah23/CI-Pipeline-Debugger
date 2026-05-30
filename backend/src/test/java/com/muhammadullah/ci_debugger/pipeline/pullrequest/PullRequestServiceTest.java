@@ -3,7 +3,6 @@ package com.muhammadullah.ci_debugger.pipeline.pullrequest;
 import com.muhammadullah.ci_debugger.exception.ErrorCode;
 import com.muhammadullah.ci_debugger.exception.ServiceException;
 import com.muhammadullah.ci_debugger.pipeline.pullrequest.dto.PullRequestResponse;
-import com.muhammadullah.ci_debugger.pipeline.pullrequest.dto.PullRequestSummaryResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRun;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunProvider;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunRepository;
@@ -236,25 +235,6 @@ class PullRequestServiceTest {
     }
 
     @Test
-    void listByRepoHappyPathReturnsMappedSummaries() {
-        Page<PullRequest> page = new PageImpl<>(List.of(pullRequest));
-
-        when(pullRequestRepository.findByOwnerAndRepoAndPrStateOrderByUpdatedAtDesc(
-                eq("owner"), eq("repo"), eq(PullRequestState.OPEN), any(PageRequest.class)))
-                .thenReturn(page);
-
-        Page<PullRequestSummaryResponse> result = pullRequestService.listByRepo("owner", "repo",
-                PullRequestState.OPEN, 0);
-
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getPrNumber()).isEqualTo(42);
-        assertThat(result.getContent().get(0).getTitle()).isEqualTo("Add feature");
-        assertThat(result.getContent().get(0).getPrState()).isEqualTo(PullRequestState.OPEN);
-        verify(pullRequestRepository).findByOwnerAndRepoAndPrStateOrderByUpdatedAtDesc(
-                eq("owner"), eq("repo"), eq(PullRequestState.OPEN), any(PageRequest.class));
-    }
-
-    @Test
     void listByRepoMergedStatePassesMergedToRepository() {
         Page<PullRequest> page = new PageImpl<>(List.of());
 
@@ -266,6 +246,7 @@ class PullRequestServiceTest {
 
         verify(pullRequestRepository).findByOwnerAndRepoAndPrStateOrderByUpdatedAtDesc(
                 eq("owner"), eq("repo"), eq(PullRequestState.MERGED), any(PageRequest.class));
+        verify(pipelineRunRepository, never()).findLatestRunPerWorkflowForPrIds(any());
     }
 
     @Test
@@ -276,10 +257,11 @@ class PullRequestServiceTest {
                 eq("owner"), eq("repo"), eq(PullRequestState.OPEN), any(PageRequest.class)))
                 .thenReturn(emptyPage);
 
-        Page<PullRequestSummaryResponse> result = pullRequestService.listByRepo("owner", "repo",
+        Page<PullRequestResponse> result = pullRequestService.listByRepo("owner", "repo",
                 PullRequestState.OPEN, 0);
 
         assertThat(result.getContent()).isEmpty();
+        verify(pipelineRunRepository, never()).findLatestRunPerWorkflowForPrIds(any());
     }
 
     // ── listRunSets ────────────────────────────────────────────────────────
