@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
@@ -22,6 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -38,7 +40,7 @@ class ErrorClusterServiceTest {
     @InjectMocks
     private ErrorClusterService errorClusterService;
 
-    //** ── helpers ────────────────────────────────────────────────────────────
+    // ** ── helpers ────────────────────────────────────────────────────────────
 
     private ErrorCluster buildCluster(String owner, String repo, String jobName, String stepName) {
         return new ErrorCluster(
@@ -47,8 +49,7 @@ class ErrorClusterServiceTest {
                 repo,
                 jobName,
                 stepName,
-                "failure"
-        );
+                "failure");
     }
 
     private PipelineRun buildRun() {
@@ -57,8 +58,7 @@ class ErrorClusterServiceTest {
                 "owner",
                 "repo",
                 "123456789",
-                PipelineRunStatus.COMPLETED
-        );
+                PipelineRunStatus.COMPLETED);
     }
 
     private ErrorOccurrence buildOccurrence(ErrorCluster cluster, PipelineRun run, PipelineStep step) {
@@ -67,10 +67,10 @@ class ErrorClusterServiceTest {
         return occurrence;
     }
 
-    //** ── listAll ────────────────────────────────────────────────────────────
+    // ** ── listAll ────────────────────────────────────────────────────────────
 
     @Test
-    void listAll_happyPath_returnsClustersSortedByOccurrenceCount() {
+    void listAllHappyPathReturnsClustersSortedByOccurrenceCount() {
         ErrorCluster cluster1 = buildCluster("owner", "repo", "build", "Run tests");
         ErrorCluster cluster2 = buildCluster("owner", "repo", "build", "Compile");
 
@@ -86,7 +86,7 @@ class ErrorClusterServiceTest {
     }
 
     @Test
-    void listAll_emptyClusters_returnsEmptyList() {
+    void listAllEmptyClustersReturnsEmptyList() {
         when(clusterRepository.findAllByOrderByOccurrenceCountDesc(any()))
                 .thenReturn(List.of());
 
@@ -96,7 +96,7 @@ class ErrorClusterServiceTest {
     }
 
     @Test
-    void listAll_limitClampedToMax_doesNotExceed100() {
+    void listAllLimitClampedToMaxDoesNotExceed100() {
         when(clusterRepository.findAllByOrderByOccurrenceCountDesc(any()))
                 .thenReturn(List.of());
 
@@ -106,7 +106,7 @@ class ErrorClusterServiceTest {
     }
 
     @Test
-    void listAll_limitBelowMax_usesProvidedLimit() {
+    void listAllLimitBelowMaxUsesProvidedLimit() {
         when(clusterRepository.findAllByOrderByOccurrenceCountDesc(any()))
                 .thenReturn(List.of());
 
@@ -116,7 +116,7 @@ class ErrorClusterServiceTest {
     }
 
     @Test
-    void listAll_limitExactlyAtMax_usesMaxLimit() {
+    void listAllLimitExactlyAtMaxUsesMaxLimit() {
         when(clusterRepository.findAllByOrderByOccurrenceCountDesc(any()))
                 .thenReturn(List.of());
 
@@ -125,50 +125,50 @@ class ErrorClusterServiceTest {
         verify(clusterRepository).findAllByOrderByOccurrenceCountDesc(PageRequest.of(0, 100));
     }
 
-    //** ── findById ───────────────────────────────────────────────────────────
+    // ** ── findById ───────────────────────────────────────────────────────────
 
     @Test
-    void findById_happyPath_returnsClusterWithOccurrences() {
+    void findByIdHappyPathReturnsClusterWithOccurrences() {
         UUID clusterId = UUID.randomUUID();
         ErrorCluster cluster = buildCluster("owner", "repo", "build", "Run tests");
         PipelineRun run = buildRun();
         ErrorOccurrence occurrence = buildOccurrence(cluster, run, null);
 
         when(clusterRepository.findById(clusterId)).thenReturn(Optional.of(cluster));
-        when(occurrenceRepository.findByErrorClusterIdOrderByCreatedAtDesc(clusterId))
-                .thenReturn(List.of(occurrence));
+        when(occurrenceRepository.findByErrorClusterIdOrderByCreatedAtDesc(eq(clusterId), any()))
+                .thenReturn(new PageImpl<>(List.of(occurrence)));
 
-        ErrorClusterWithOccurrencesResponse result = errorClusterService.findById(clusterId);
+        ErrorClusterWithOccurrencesResponse result = errorClusterService.findById(clusterId, 0);
 
         assertThat(result).isNotNull();
         assertThat(result.getCluster().getJobName()).isEqualTo("build");
         assertThat(result.getCluster().getStepName()).isEqualTo("Run tests");
-        assertThat(result.getOccurrences()).hasSize(1);
-        assertThat(result.getOccurrences().get(0).getSnippet()).isEqualTo("[ERROR] something went wrong");
+        assertThat(result.getOccurrences().getContent()).hasSize(1);
+        assertThat(result.getOccurrences().getContent().get(0).getSnippet()).isEqualTo("[ERROR] something went wrong");
     }
 
     @Test
-    void findById_noOccurrences_returnsClusterWithEmptyOccurrencesList() {
+    void findByIdNoOccurrencesReturnsClusterWithEmptyOccurrencesList() {
         UUID clusterId = UUID.randomUUID();
         ErrorCluster cluster = buildCluster("owner", "repo", "build", "Run tests");
 
         when(clusterRepository.findById(clusterId)).thenReturn(Optional.of(cluster));
-        when(occurrenceRepository.findByErrorClusterIdOrderByCreatedAtDesc(clusterId))
-                .thenReturn(List.of());
+        when(occurrenceRepository.findByErrorClusterIdOrderByCreatedAtDesc(eq(clusterId), any()))
+                .thenReturn(new PageImpl<>(List.of()));
 
-        ErrorClusterWithOccurrencesResponse result = errorClusterService.findById(clusterId);
+        ErrorClusterWithOccurrencesResponse result = errorClusterService.findById(clusterId, 0);
 
         assertThat(result.getCluster()).isNotNull();
-        assertThat(result.getOccurrences()).isEmpty();
+        assertThat(result.getOccurrences().getContent()).isEmpty();
     }
 
     @Test
-    void findById_clusterNotFound_throwsErrorClusterNotFound() {
+    void findByIdClusterNotFoundThrowsErrorClusterNotFound() {
         UUID clusterId = UUID.randomUUID();
 
         when(clusterRepository.findById(clusterId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> errorClusterService.findById(clusterId))
+        assertThatThrownBy(() -> errorClusterService.findById(clusterId, 0))
                 .isInstanceOf(ServiceException.class)
                 .satisfies(ex -> {
                     ServiceException se = (ServiceException) ex;
@@ -176,11 +176,11 @@ class ErrorClusterServiceTest {
                     assertThat(se.getDetails()).containsKey("id");
                 });
 
-        verify(occurrenceRepository, never()).findByErrorClusterIdOrderByCreatedAtDesc(any());
+        verify(occurrenceRepository, never()).findByErrorClusterIdOrderByCreatedAtDesc(any(), any());
     }
 
     @Test
-    void findById_withMultipleOccurrences_returnsAllOccurrences() {
+    void findByIdWithMultipleOccurrencesReturnsAllOccurrences() {
         UUID clusterId = UUID.randomUUID();
         ErrorCluster cluster = buildCluster("owner", "repo", "build", "Run tests");
         PipelineRun run1 = buildRun();
@@ -190,18 +190,18 @@ class ErrorClusterServiceTest {
         ErrorOccurrence occurrence2 = buildOccurrence(cluster, run2, null);
 
         when(clusterRepository.findById(clusterId)).thenReturn(Optional.of(cluster));
-        when(occurrenceRepository.findByErrorClusterIdOrderByCreatedAtDesc(clusterId))
-                .thenReturn(List.of(occurrence1, occurrence2));
+        when(occurrenceRepository.findByErrorClusterIdOrderByCreatedAtDesc(eq(clusterId), any()))
+                .thenReturn(new PageImpl<>(List.of(occurrence1, occurrence2)));
 
-        ErrorClusterWithOccurrencesResponse result = errorClusterService.findById(clusterId);
+        ErrorClusterWithOccurrencesResponse result = errorClusterService.findById(clusterId, 0);
 
-        assertThat(result.getOccurrences()).hasSize(2);
+        assertThat(result.getOccurrences().getContent()).hasSize(2);
     }
 
-    //** ── findByRunId ────────────────────────────────────────────────────────
+    // ** ── findByRunId ────────────────────────────────────────────────────────
 
     @Test
-    void findByRunId_happyPath_returnsClustersForRun() {
+    void findByRunIdHappyPathReturnsClustersForRun() {
         UUID runId = UUID.randomUUID();
         ErrorCluster cluster1 = buildCluster("owner", "repo", "build", "Run tests");
         ErrorCluster cluster2 = buildCluster("owner", "repo", "build", "Compile");
@@ -216,7 +216,7 @@ class ErrorClusterServiceTest {
     }
 
     @Test
-    void findByRunId_noClustersForRun_returnsEmptyList() {
+    void findByRunIdNoClustersForRunReturnsEmptyList() {
         UUID runId = UUID.randomUUID();
 
         when(clusterRepository.findByRunId(runId)).thenReturn(List.of());
@@ -227,7 +227,7 @@ class ErrorClusterServiceTest {
     }
 
     @Test
-    void findByRunId_mapsAllClusterFields() {
+    void findByRunIdMapsAllClusterFields() {
         UUID runId = UUID.randomUUID();
         ErrorCluster cluster = buildCluster("owner", "repo", "build", "Run tests");
         cluster.setRepresentativeMessage("[ERROR] Build failed");

@@ -1,31 +1,30 @@
 package com.muhammadullah.ci_debugger.pipeline.error.dto;
 
-import java.util.List;
-
 import com.muhammadullah.ci_debugger.pipeline.error.ErrorCluster;
+import org.springframework.data.domain.Page;
 
 public class ErrorClusterWithOccurrencesResponse {
 
     private ErrorClusterResponse cluster;
-    private List<ErrorOccurrenceResponse> occurrences;
+    private Page<ErrorOccurrenceResponse> occurrences;
 
     private ErrorClusterWithOccurrencesResponse() {
-    };
+    }
 
-    public static ErrorClusterWithOccurrencesResponse of(ErrorCluster errorCluster,
-            List<ErrorOccurrenceResponse> occurrences) {
-        ErrorClusterWithOccurrencesResponse reponse = new ErrorClusterWithOccurrencesResponse();
-        reponse.cluster = ErrorClusterResponse.from(errorCluster);
-        reponse.occurrences = occurrences;
-        return reponse;
+    public static ErrorClusterWithOccurrencesResponse of(
+            ErrorCluster errorCluster,
+            Page<ErrorOccurrenceResponse> occurrences) {
+        ErrorClusterWithOccurrencesResponse response = new ErrorClusterWithOccurrencesResponse();
+        response.cluster = ErrorClusterResponse.from(errorCluster);
+        response.occurrences = occurrences;
+        return response;
     }
 
     public ErrorClusterResponse getCluster() {
         return cluster;
     }
 
-    public List<ErrorOccurrenceResponse> getOccurrences() {
+    public Page<ErrorOccurrenceResponse> getOccurrences() {
         return occurrences;
     }
-
 }
