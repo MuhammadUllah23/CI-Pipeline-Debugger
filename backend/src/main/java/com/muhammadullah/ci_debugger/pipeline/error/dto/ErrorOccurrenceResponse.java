@@ -13,6 +13,8 @@ public class ErrorOccurrenceResponse {
     private UUID pipelineStepId;
     private String snippet;
     private Integer lineNumber;
+    private String branch;
+    private String headSha;
     private Instant createdAt;
 
     public static ErrorOccurrenceResponse from(ErrorOccurrence occurrence) {
@@ -25,6 +27,8 @@ public class ErrorOccurrenceResponse {
                 : null;
         r.snippet = occurrence.getSnippet();
         r.lineNumber = occurrence.getLineNumber();
+        r.branch = occurrence.getPipelineRun().getBranch();
+        r.headSha = occurrence.getPipelineRun().getHeadSha();
         r.createdAt = occurrence.getCreatedAt();
         return r;
     }
@@ -51,6 +55,14 @@ public class ErrorOccurrenceResponse {
 
     public Integer getLineNumber() {
         return lineNumber;
+    }
+
+    public String getBranch() {
+        return branch;
+    }
+
+    public String getHeadSha() {
+        return headSha;
     }
 
     public Instant getCreatedAt() {
