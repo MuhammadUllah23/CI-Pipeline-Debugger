@@ -71,7 +71,7 @@ class GitHubLogsApiClientTest {
 
         assertThat(result.get("build")).containsExactly(
                 "##[group]Run mvn clean compile",
-                "[ERROR] No POM in this directory",
+                "[ERROR] Nox POM in this directory",
                 "##[error]Process completed with exit code 1.");
         assertThat(result.get("build")).noneMatch(line -> line.startsWith("[INFO]"));
         mockServer.verify();
