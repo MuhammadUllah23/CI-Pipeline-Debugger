@@ -68,7 +68,7 @@ class ErrorClusterServiceTest {
     }
 
     //** ── listAll ────────────────────────────────────────────────────────────
-
+// #comment
     @Test
     void listAll_happyPath_returnsClustersSortedByOccurrenceCount() {
         ErrorCluster cluster1 = buildCluster("owner", "repo", "build", "Run tests");
