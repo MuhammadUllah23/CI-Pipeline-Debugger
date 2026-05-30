@@ -54,8 +54,8 @@ export default function RepoView() {
             isLoading={runsLoading}
             page={runsPage}
             totalPages={totalRunPages}
-            onPrevious={() => setRunsPage(p => p - 1)}
-            onNext={() => setRunsPage(p => p + 1)}
+            onPrevious={() => setRunsPage((p) => p - 1)}
+            onNext={() => setRunsPage((p) => p + 1)}
           />
         )}
 
@@ -66,9 +66,12 @@ export default function RepoView() {
             status={prStatus}
             page={prPage}
             totalPages={totalPrPages}
-            onStatusChange={s => { setPrStatus(s); setPrPage(0) }}
-            onPrevious={() => setPrPage(p => p - 1)}
-            onNext={() => setPrPage(p => p + 1)}
+            onStatusChange={(s) => {
+              setPrStatus(s)
+              setPrPage(0)
+            }}
+            onPrevious={() => setPrPage((p) => p - 1)}
+            onNext={() => setPrPage((p) => p + 1)}
           />
         )}
       </div>

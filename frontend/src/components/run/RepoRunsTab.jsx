@@ -7,7 +7,11 @@ export default function RepoRunsTab({ sets, isLoading, page, totalPages, onPrevi
   }
 
   if (sets.length === 0) {
-    return <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>No main branch runs found.</p>
+    return (
+      <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
+        No main branch runs found.
+      </p>
+    )
   }
 
   return (

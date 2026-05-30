@@ -3,7 +3,16 @@ import Pagination from '../ui/Pagination.jsx'
 
 const PR_STATUS = ['open', 'merged']
 
-export default function RepoPrsTab({ prs, isLoading, status, page, totalPages, onStatusChange, onPrevious, onNext }) {
+export default function RepoPrsTab({
+  prs,
+  isLoading,
+  status,
+  page,
+  totalPages,
+  onStatusChange,
+  onPrevious,
+  onNext,
+}) {
   return (
     <>
       <div
@@ -18,7 +27,7 @@ export default function RepoPrsTab({ prs, isLoading, status, page, totalPages, o
           marginBottom: '1rem',
         }}
       >
-        {PR_STATUS.map(s => (
+        {PR_STATUS.map((s) => (
           <button
             key={s}
             onClick={() => onStatusChange(s)}
@@ -41,9 +50,11 @@ export default function RepoPrsTab({ prs, isLoading, status, page, totalPages, o
       {isLoading ? (
         <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>Loading...</p>
       ) : prs.length === 0 ? (
-        <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>No {status} pull requests.</p>
+        <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
+          No {status} pull requests.
+        </p>
       ) : (
-        prs.map(pr => <PrCard key={pr.id} pr={pr} />)
+        prs.map((pr) => <PrCard key={pr.id} pr={pr} />)
       )}
 
       <Pagination

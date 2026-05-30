@@ -7,7 +7,7 @@ export default function Tabs({ tabs, activeTab, onTabChange }) {
         marginBottom: '1.5rem',
       }}
     >
-      {tabs.map(tab => (
+      {tabs.map((tab) => (
         <button
           key={tab}
           onClick={() => onTabChange(tab)}
@@ -17,7 +17,8 @@ export default function Tabs({ tabs, activeTab, onTabChange }) {
             cursor: 'pointer',
             background: 'transparent',
             border: 'none',
-            borderBottom: activeTab === tab ? '2px solid var(--color-accent)' : '2px solid transparent',
+            borderBottom:
+              activeTab === tab ? '2px solid var(--color-accent)' : '2px solid transparent',
             color: activeTab === tab ? 'var(--color-accent)' : 'var(--color-text-secondary)',
             fontWeight: activeTab === tab ? '500' : '400',
             marginBottom: '-0.5px',
