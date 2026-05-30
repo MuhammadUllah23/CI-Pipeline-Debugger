@@ -6,8 +6,8 @@ async function fetchClusters() {
   return res.json()
 }
 
-async function fetchCluster(id) {
-  const res = await fetch(`/api/clusters/${id}`)
+async function fetchCluster(id, page) {
+  const res = await fetch(`/api/clusters/${id}?page=${page}`)
   if (!res.ok) throw new Error(`Failed to fetch cluster: ${res.status}`)
   return res.json()
 }
@@ -19,9 +19,9 @@ export function useClusters() {
   })
 }
 
-export function useCluster(id) {
+export function useCluster(id, page) {
   return useQuery({
-    queryKey: ['clusters', id],
-    queryFn: () => fetchCluster(id),
+    queryKey: ['clusters', id, page],
+    queryFn: () => fetchCluster(id, page),
   })
 }
