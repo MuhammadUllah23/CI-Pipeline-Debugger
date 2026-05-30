@@ -82,7 +82,6 @@ class GitHubLogsApiClientTest {
                 2026-04-01T02:31:11.379Z shell: /usr/bin/bash -e {0}
                 2026-04-01T02:31:11.379Z [command]/usr/bin/git version
                 2026-04-01T02:31:11.379Z ##[endgroup]
-                2026-04-01T02:31:11.379Z [INFO] Scanning for projects...
                 2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
                 """;
 
