@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useCluster } from '../api/clusters.js'
 import PageHeader from '../components/ui/PageHeader.jsx'
 import OccurrenceRow from '../components/cluster/OccurrenceRow.jsx'
+import Pagination from '../components/ui/Pagination.jsx'
 import { timeAgo } from '../utils/format.js'
 
 function representativeError(message) {
@@ -12,7 +14,8 @@ function representativeError(message) {
 
 export default function ClusterDetail() {
   const { id } = useParams()
-  const { data, isLoading, isError } = useCluster(id)
+  const [page, setPage] = useState(0)
+  const { data, isLoading, isError } = useCluster(id, page)
 
   if (isLoading) {
     return (
@@ -119,13 +122,20 @@ export default function ClusterDetail() {
           Occurrences
         </p>
 
-        {occurrences.map((occurrence, index) => (
+        {occurrences.content.map((occurrence, index) => (
           <OccurrenceRow
             key={occurrence.id}
             occurrence={occurrence}
-            defaultExpanded={index === 0}
+            defaultExpanded={page === 0 && index === 0}
           />
         ))}
+
+        <Pagination
+          page={page}
+          hasMore={page < occurrences.totalPages - 1}
+          onPrevious={() => setPage(p => p - 1)}
+          onNext={() => setPage(p => p + 1)}
+        />
       </div>
     </div>
   )
