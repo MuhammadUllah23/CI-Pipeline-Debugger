@@ -6,12 +6,6 @@ async function fetchRuns() {
   return res.json()
 }
 
-async function fetchRepoRuns(owner, repo, page) {
-  const res = await fetch(`/api/runs/${owner}/${repo}?page=${page}`)
-  if (!res.ok) throw new Error(`Failed to fetch repo runs: ${res.status}`)
-  return res.json()
-}
-
 async function fetchRun(id) {
   const res = await fetch(`/api/runs/${id}`)
   if (!res.ok) throw new Error(`Failed to fetch run: ${res.status}`)
@@ -36,17 +30,16 @@ async function fetchRepos() {
   return res.json()
 }
 
+async function fetchMainBranchRunSets(owner, repo, page) {
+  const res = await fetch(`/api/runs/${owner}/${repo}/run-sets?page=${page}`)
+  if (!res.ok) throw new Error(`Failed to fetch run sets: ${res.status}`)
+  return res.json()
+}
+
 export function useRuns() {
   return useQuery({
     queryKey: ['runs'],
     queryFn: fetchRuns,
-  })
-}
-
-export function useRepoRuns(owner, repo, page) {
-  return useQuery({
-    queryKey: ['runs', owner, repo, page],
-    queryFn: () => fetchRepoRuns(owner, repo, page),
   })
 }
 
@@ -75,5 +68,13 @@ export function useRepos() {
   return useQuery({
     queryKey: ['repos'],
     queryFn: fetchRepos,
+  })
+}
+
+export function useMainBranchRunSets(owner, repo, page) {
+  return useQuery({
+    queryKey: ['runs', owner, repo, 'run-sets', page],
+    queryFn: () => fetchMainBranchRunSets(owner, repo, page),
+    refetchInterval: 30000,
   })
 }

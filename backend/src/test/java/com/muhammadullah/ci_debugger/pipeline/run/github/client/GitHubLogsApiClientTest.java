@@ -33,8 +33,7 @@ class GitHubLogsApiClientTest {
     private static final String OWNER = "owner";
     private static final String REPO = "ci-pipeline-debugger";
     private static final String RUN_ID = "123456789";
-    private static final String EXPECTED_PATH = "/repos/" + OWNER + "/" + REPO + "/actions/runs/" + RUN_ID
-            + "/logs";
+    private static final String EXPECTED_PATH = "/repos/" + OWNER + "/" + REPO + "/actions/runs/" + RUN_ID + "/logs";
 
     private GitHubLogsApiClient client;
     private MockRestServiceServer mockServer;
@@ -49,7 +48,7 @@ class GitHubLogsApiClientTest {
     }
 
     @Test
-    @DisplayName("returns group context and error line for happy path")
+    @DisplayName("returns group header and meaningful error lines for known tools")
     void fetchErrorLinesReturnsGroupContextAndErrorLine() throws IOException {
         String logContent = """
                 2026-04-01T02:31:11.379Z ##[group]Run mvn clean compile
@@ -170,8 +169,9 @@ class GitHubLogsApiClientTest {
     void fetchErrorLinesExcludesEndGroupLines() throws IOException {
         String logContent = """
                 2026-04-01T02:31:11.379Z ##[group]Run mvn clean compile
-                2026-04-01T02:31:11.379Z [ERROR] No POM in this directory
+                2026-04-01T02:31:11.379Z mvn clean compile
                 2026-04-01T02:31:11.379Z ##[endgroup]
+                2026-04-01T02:31:11.379Z [ERROR] No POM in this directory
                 2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
                 """;
 
@@ -226,8 +226,9 @@ class GitHubLogsApiClientTest {
     void fetchErrorLinesExcludesJobWithNoErrorLine() throws IOException {
         String logContent = """
                 2026-04-01T02:31:11.379Z ##[group]Run mvn clean compile
-                2026-04-01T02:31:11.379Z [INFO] Build successful
+                2026-04-01T02:31:11.379Z mvn clean compile
                 2026-04-01T02:31:11.379Z ##[endgroup]
+                2026-04-01T02:31:11.379Z [INFO] Build successful
                 """;
 
         byte[] zipBytes = buildZip(Map.of("0_build.txt", logContent));
@@ -385,6 +386,67 @@ class GitHubLogsApiClientTest {
         assertThat(result.get("frontend")).noneMatch(line -> line.contains("[33m"));
         assertThat(result.get("frontend")).noneMatch(line -> line.contains("[39m"));
         assertThat(result.get("frontend")).anyMatch(line -> line.contains("Code style issues found in 16 files."));
+        mockServer.verify();
+    }
+
+    @Test
+    @DisplayName("preserves error lines when post job cleanup group appears before ##[error]")
+    void fetchErrorLinesPreservesErrorLinesWhenPostJobCleanupGroupAppears() throws IOException {
+        String logContent = """
+                2026-04-01T02:31:11.379Z ##[group]Run mvn test
+                2026-04-01T02:31:11.379Z mvn test
+                2026-04-01T02:31:11.379Z ##[endgroup]
+                2026-04-01T02:31:11.379Z [ERROR] Tests run: 14, Failures: 3, Errors: 0
+                2026-04-01T02:31:11.379Z [ERROR] Failed to execute goal
+                2026-04-01T02:31:11.379Z ##[group]Post job cleanup
+                2026-04-01T02:31:11.379Z ##[endgroup]
+                2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
+                """;
+
+        byte[] zipBytes = buildZip(Map.of("0_build.txt", logContent));
+
+        mockServer.expect(requestTo(containsString(EXPECTED_PATH)))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(zipBytes, MediaType.APPLICATION_OCTET_STREAM));
+
+        Map<String, List<String>> result = client.fetchErrorLines(OWNER, REPO, RUN_ID);
+
+        assertThat(result.get("build")).containsExactly(
+                "##[group]Run mvn test",
+                "[ERROR] Tests run: 14, Failures: 3, Errors: 0",
+                "[ERROR] Failed to execute goal",
+                "##[error]Process completed with exit code 1.");
+        assertThat(result.get("build")).noneMatch(line -> line.contains("Post job cleanup"));
+        mockServer.verify();
+    }
+
+    @Test
+    @DisplayName("falls back to line limit for unknown tools with no recognized prefixes")
+    void fetchErrorLinesFallsBackToLineLimitForUnknownTool() throws IOException {
+        String logContent = """
+                2026-04-01T02:31:11.379Z ##[group]Run npm run build
+                2026-04-01T02:31:11.379Z npm run build
+                2026-04-01T02:31:11.379Z ##[endgroup]
+                2026-04-01T02:31:11.379Z building client environment...
+                2026-04-01T02:31:11.379Z transforming modules...
+                2026-04-01T02:31:11.379Z build failed in 409ms
+                2026-04-01T02:31:11.379Z could not resolve './RunSet.jsx'
+                2026-04-01T02:31:11.379Z module not found
+                2026-04-01T02:31:11.379Z ##[error]Process completed with exit code 1.
+                """;
+
+        byte[] zipBytes = buildZip(Map.of("0_frontend.txt", logContent));
+
+        mockServer.expect(requestTo(containsString(EXPECTED_PATH)))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(zipBytes, MediaType.APPLICATION_OCTET_STREAM));
+
+        Map<String, List<String>> result = client.fetchErrorLines(OWNER, REPO, RUN_ID);
+
+        assertThat(result.get("frontend")).contains("##[group]Run npm run build");
+        assertThat(result.get("frontend")).contains("build failed in 409ms");
+        assertThat(result.get("frontend")).contains("could not resolve './RunSet.jsx'");
+        assertThat(result.get("frontend")).contains("##[error]Process completed with exit code 1.");
         mockServer.verify();
     }
 

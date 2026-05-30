@@ -138,4 +138,58 @@ public interface PipelineRunRepository extends JpaRepository<PipelineRun, UUID> 
     List<PipelineRun> findByPullRequestIdAndHeadShaIn(
             @Param("prId") UUID prId,
             @Param("headShas") List<String> headShas);
+
+    /**
+     * Returns the latest run per workflow for each pull request in the given list.
+     */
+    @Query(value = """
+            SELECT r.* FROM pipeline_run r
+            WHERE r.pr_id IN :prIds
+            AND r.id = (
+                SELECT r2.id FROM pipeline_run r2
+                WHERE r2.pr_id = r.pr_id
+                AND r2.workflow_name = r.workflow_name
+                ORDER BY r2.created_at DESC
+                LIMIT 1
+            )
+            ORDER BY r.created_at DESC
+            """, nativeQuery = true)
+    List<PipelineRun> findLatestRunPerWorkflowForPrIds(
+            @Param("prIds") List<UUID> prIds);
+
+    /**
+     * Returns distinct head SHAs for main branch runs of a repo,
+     * ordered by most recent first.
+     */
+    @Query(value = """
+            SELECT head_sha
+            FROM pipeline_run
+            WHERE owner = :owner
+            AND repo = :repo
+            AND branch = 'main'
+            AND pr_id IS NULL
+            AND workflow_name IS NOT NULL
+            GROUP BY head_sha
+            ORDER BY MIN(started_at) DESC
+            """, nativeQuery = true)
+    List<String> findDistinctMainBranchHeadShas(
+            @Param("owner") String owner,
+            @Param("repo") String repo);
+
+    /**
+     * Returns all main branch runs for a repo whose head SHA is in the given list.
+     */
+    @Query("""
+            SELECT r FROM PipelineRun r
+            WHERE r.owner = :owner
+            AND r.repo = :repo
+            AND r.branch = 'main'
+            AND r.pullRequest IS NULL
+            AND r.headSha IN :headShas
+            ORDER BY r.startedAt DESC
+            """)
+    List<PipelineRun> findMainBranchRunsByHeadShaIn(
+            @Param("owner") String owner,
+            @Param("repo") String repo,
+            @Param("headShas") List<String> headShas);
 }

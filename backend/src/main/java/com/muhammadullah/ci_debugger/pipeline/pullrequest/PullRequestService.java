@@ -3,7 +3,6 @@ package com.muhammadullah.ci_debugger.pipeline.pullrequest;
 import com.muhammadullah.ci_debugger.exception.ErrorCode;
 import com.muhammadullah.ci_debugger.exception.ServiceException;
 import com.muhammadullah.ci_debugger.pipeline.pullrequest.dto.PullRequestResponse;
-import com.muhammadullah.ci_debugger.pipeline.pullrequest.dto.PullRequestSummaryResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRun;
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRunRepository;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.CommitRunSetResponse;
@@ -62,7 +61,8 @@ public class PullRequestService {
      * @param id   the pull request ID
      * @param page zero-based page number
      * @return the pull request with paginated runs
-     * @throws ServiceException with {@link ErrorCode#DB_RECORD_NOT_FOUND} if not found
+     * @throws ServiceException with {@link ErrorCode#DB_RECORD_NOT_FOUND} if not
+     *                          found
      */
     @Transactional(readOnly = true)
     public PullRequestResponse findById(UUID id, int page) {
@@ -159,12 +159,37 @@ public class PullRequestService {
     }
 
     /**
-     * Returns a paginated list of pull requests for a given repo filtered by state.
+     * Returns a paginated list of pull requests for a given repo filtered by state,
+     * each with their latest run per workflow.
+     *
+     * @param owner the repository owner
+     * @param repo  the repository name
+     * @param state the PR state to filter by
+     * @param page  zero-based page number
+     * @return a page of pull request responses with runs
      */
     @Transactional(readOnly = true)
-    public Page<PullRequestSummaryResponse> listByRepo(String owner, String repo, PullRequestState state, int page) {
+    public Page<PullRequestResponse> listByRepo(String owner, String repo, PullRequestState state, int page) {
         Page<PullRequest> prs = pullRequestRepository.findByOwnerAndRepoAndPrStateOrderByUpdatedAtDesc(
                 owner, repo, state, PageRequest.of(page, PR_RUNS_PAGE_SIZE));
-        return prs.map(PullRequestSummaryResponse::from);
+
+        if (prs.isEmpty()) {
+            return Page.empty();
+        }
+
+        List<UUID> prIds = prs.getContent().stream()
+                .map(PullRequest::getId)
+                .toList();
+
+        List<PipelineRun> runs = pipelineRunRepository.findLatestRunPerWorkflowForPrIds(prIds);
+
+        Map<UUID, List<PipelineRun>> runsByPrId = runs.stream()
+                .collect(Collectors.groupingBy(r -> r.getPullRequest().getId()));
+
+        List<PullRequestResponse> responses = prs.getContent().stream()
+                .map(pr -> PullRequestResponse.from(pr, runsByPrId.getOrDefault(pr.getId(), List.of())))
+                .toList();
+
+        return new PageImpl<>(responses, PageRequest.of(page, PR_RUNS_PAGE_SIZE), prs.getTotalElements());
     }
 }

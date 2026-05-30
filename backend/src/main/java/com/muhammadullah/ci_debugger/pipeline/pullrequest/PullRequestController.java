@@ -1,7 +1,6 @@
 package com.muhammadullah.ci_debugger.pipeline.pullrequest;
 
 import com.muhammadullah.ci_debugger.pipeline.pullrequest.dto.PullRequestResponse;
-import com.muhammadullah.ci_debugger.pipeline.pullrequest.dto.PullRequestSummaryResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.CommitRunSetResponse;
 
 import org.slf4j.Logger;
@@ -44,7 +43,7 @@ public class PullRequestController {
     }
 
     @GetMapping("/{owner}/{repo}")
-    public ResponseEntity<Page<PullRequestSummaryResponse>> listByRepo(
+    public ResponseEntity<Page<PullRequestResponse>> listByRepo(
             @PathVariable String owner,
             @PathVariable String repo,
             @RequestParam(defaultValue = "open") String status,

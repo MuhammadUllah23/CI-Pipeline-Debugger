@@ -2,11 +2,14 @@ package com.muhammadullah.ci_debugger.pipeline.run;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.muhammadullah.ci_debugger.exception.ErrorCode;
 import com.muhammadullah.ci_debugger.exception.ServiceException;
 import com.muhammadullah.ci_debugger.pipeline.pullrequest.PullRequest;
+import com.muhammadullah.ci_debugger.pipeline.run.dto.CommitRunSetResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunUpsertRequest;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.RepoStatusResponse;
@@ -27,6 +31,7 @@ public class PipelineRunService {
     private static final Logger log = LoggerFactory.getLogger(PipelineRunService.class);
 
     private static final int REPO_PAGE_SIZE = 20;
+    private static final int COMMIT_SET_PAGE_SIZE = 10;
 
     private final PipelineRunRepository repository;
 
@@ -195,6 +200,51 @@ public class PipelineRunService {
         log.info("Created pipeline run {} for {}/{} providerRunId={} status={}",
                 savedPipelineRun.getId(), owner, repo, req.getProviderRunId(), status);
         return savedPipelineRun;
+    }
+
+    /**
+     * Returns a paginated list of main branch commit run sets for a given repo.
+     *
+     * @param owner the repository owner
+     * @param repo  the repository name
+     * @param page  zero-based page number
+     * @return a page of commit run sets ordered by most recent commit first
+     */
+    @Transactional(readOnly = true)
+    public Page<CommitRunSetResponse> listMainBranchRunSets(String owner, String repo, int page) {
+        List<String> allHeadShas = repository.findDistinctMainBranchHeadShas(owner, repo);
+
+        if (allHeadShas.isEmpty()) {
+            return Page.empty();
+        }
+
+        int total = allHeadShas.size();
+        int fromIndex = page * COMMIT_SET_PAGE_SIZE;
+        int toIndex = Math.min(fromIndex + COMMIT_SET_PAGE_SIZE, total);
+
+        if (fromIndex >= total) {
+            return Page.empty();
+        }
+
+        List<String> pageHeadShas = allHeadShas.subList(fromIndex, toIndex);
+        List<PipelineRun> runs = repository.findMainBranchRunsByHeadShaIn(owner, repo, pageHeadShas);
+
+        Map<String, List<PipelineRun>> grouped = runs.stream()
+                .collect(Collectors.groupingBy(PipelineRun::getHeadSha));
+
+        List<CommitRunSetResponse> sets = pageHeadShas.stream()
+                .map(sha -> {
+                    List<PipelineRun> shaRuns = grouped.getOrDefault(sha, List.of());
+                    Instant startedAt = shaRuns.stream()
+                            .map(PipelineRun::getStartedAt)
+                            .filter(t -> t != null)
+                            .min(Instant::compareTo)
+                            .orElse(null);
+                    return CommitRunSetResponse.from(sha, startedAt, shaRuns);
+                })
+                .toList();
+
+        return new PageImpl<>(sets, PageRequest.of(page, COMMIT_SET_PAGE_SIZE), total);
     }
 
     private PipelineRun applyUpdate(

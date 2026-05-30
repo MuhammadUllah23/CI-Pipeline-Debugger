@@ -1,6 +1,9 @@
 package com.muhammadullah.ci_debugger.pipeline.error;
 
 import com.muhammadullah.ci_debugger.pipeline.run.PipelineRun;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -17,7 +20,7 @@ public interface ErrorOccurrenceRepository extends JpaRepository<ErrorOccurrence
     /**
      * Returns all occurrences for a given error cluster, ordered by
      */
-    List<ErrorOccurrence> findByErrorClusterIdOrderByCreatedAtDesc(UUID errorClusterId);
+    Page<ErrorOccurrence> findByErrorClusterIdOrderByCreatedAtDesc(UUID errorClusterId, Pageable pageable);
 
     /**
      * Returns all occurrences associated with a given pipeline run.

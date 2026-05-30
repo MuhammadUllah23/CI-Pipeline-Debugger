@@ -24,6 +24,7 @@ public class GitHubLogsApiClient {
 
     private static final Logger log = LoggerFactory.getLogger(GitHubLogsApiClient.class);
     private static final String LOGS_PATH = "/repos/{owner}/{repo}/actions/runs/{runId}/logs";
+    private static final int MAX_SNIPPET_LINES = 15;
 
     private final RestClient gitHubRestClient;
 
@@ -41,6 +42,11 @@ public class GitHubLogsApiClient {
      * {@code build/system.txt} are ignored. The snippet for each failing step
      * is captured from the last {@code ##[group]} marker before the
      * {@code ##[error]} line, excluding metadata noise.
+     *
+     * <p>
+     * For known tools (Maven, ESLint, Prettier), only meaningful prefixed
+     * lines are included. For unknown tools, the last {@value MAX_SNIPPET_LINES}
+     * lines are returned as a fallback.
      *
      * @param owner the repository owner
      * @param repo  the repository name
@@ -145,17 +151,28 @@ public class GitHubLogsApiClient {
     }
 
     /**
-     * Reads lines from the current zip entry and returns the content of the
-     * failing step — everything from the last {@code ##[group]} marker before
-     * a {@code ##[error]} line through to and including the {@code ##[error]}
-     * line itself. The command echo immediately after {@code ##[group]} and
-     * metadata noise lines are excluded.
+     * Reads lines from the current zip entry and returns a snippet for the
+     * failing step.
+     *
+     * <p>
+     * All non-noise lines within each {@code ##[group]} are accumulated in
+     * {@code currentGroupLines}. When a new {@code ##[group]} is encountered,
+     * the current group is saved as {@code bestCandidateLines} if it has
+     * meaningful content — this handles post-job cleanup groups that appear
+     * between the error output and {@code ##[error]}.
+     *
+     * <p>
+     * When {@code ##[error]} is encountered, the snippet is built from
+     * {@code currentGroupLines} if it has content, otherwise from
+     * {@code bestCandidateLines}. Known tool prefixes are preferred; unknown
+     * tools fall back to the last {@value MAX_SNIPPET_LINES} lines.
      *
      * <p>
      * Returns an empty list if no {@code ##[error]} line is found.
      */
     private List<String> extractErrorLinesFromEntry(ZipInputStream zipInputStream) throws IOException {
         List<String> currentGroupLines = new ArrayList<>();
+        List<String> bestCandidateLines = new ArrayList<>();
         List<String> errorGroupLines = new ArrayList<>();
         boolean foundError = false;
         boolean skippedCommandEcho = true;
@@ -168,6 +185,9 @@ public class GitHubLogsApiClient {
             String stripped = stripAnsiCodes(stripTimestamp(line));
 
             if (stripped.startsWith("##[group]")) {
+                if (hasMeaningfulContent(currentGroupLines)) {
+                    bestCandidateLines = new ArrayList<>(currentGroupLines);
+                }
                 currentGroupLines = new ArrayList<>();
                 currentGroupLines.add(stripped);
                 skippedCommandEcho = false;
@@ -180,7 +200,10 @@ public class GitHubLogsApiClient {
 
             if (stripped.startsWith("##[error]")) {
                 if (!foundError) {
-                    errorGroupLines = new ArrayList<>(currentGroupLines);
+                    List<String> snippetSource = hasMeaningfulContent(currentGroupLines)
+                            ? currentGroupLines
+                            : bestCandidateLines;
+                    errorGroupLines = buildSnippetLines(snippetSource);
                     foundError = true;
                 }
                 errorGroupLines.add(stripped);
@@ -192,18 +215,72 @@ public class GitHubLogsApiClient {
                 continue;
             }
 
-            if (isNoiseLine(stripped)) {
-                continue;
-            }
-
-            if (foundError) {
-                errorGroupLines.add(stripped);
-            } else {
+            if (!isNoiseLine(stripped)) {
                 currentGroupLines.add(stripped);
             }
         }
 
         return errorGroupLines;
+    }
+
+    /**
+     * Builds the snippet lines from the current group content.
+     *
+     * <p>
+     * If the group contains lines matching known error prefixes, only those
+     * lines are returned alongside the group header — giving a clean focused
+     * snippet for known tools like Maven, ESLint, and Prettier.
+     *
+     * <p>
+     * If no recognized prefixes are found, falls back to the last
+     * {@value MAX_SNIPPET_LINES} lines — ensuring unknown tools like Vite
+     * still produce useful context.
+     */
+    private List<String> buildSnippetLines(List<String> groupLines) {
+        List<String> meaningful = groupLines.stream()
+                .filter(l -> isMeaningfulLine(l) || l.startsWith("##[group]"))
+                .toList();
+
+        if (meaningful.size() > 1) {
+            return new ArrayList<>(meaningful);
+        }
+
+        return tailWithHeader(groupLines, MAX_SNIPPET_LINES);
+    }
+
+    /**
+     * Returns true if the group lines contain actual content beyond just the
+     * {@code ##[group]} header. Used to determine whether to save the current
+     * group as a candidate before resetting on the next {@code ##[group]}.
+     */
+    private boolean hasMeaningfulContent(List<String> lines) {
+        return lines.stream().anyMatch(l -> !l.startsWith("##[group]"));
+    }
+
+    /**
+     * Returns the last {@code maxLines} lines from the list, always preserving
+     * the first line (the {@code ##[group]} header) so the snippet always
+     * identifies which step failed.
+     */
+    private List<String> tailWithHeader(List<String> lines, int maxLines) {
+        if (lines.size() <= maxLines) {
+            return new ArrayList<>(lines);
+        }
+        List<String> result = new ArrayList<>();
+        result.add(lines.get(0));
+        result.addAll(lines.subList(lines.size() - (maxLines - 1), lines.size()));
+        return result;
+    }
+
+    /**
+     * Returns true for lines that carry actionable error information worth
+     * including in the snippet for known tools. Lines not matching any prefix
+     * trigger the fallback line-limit approach via {@link #tailWithHeader}.
+     */
+    private boolean isMeaningfulLine(String line) {
+        return line.startsWith("[ERROR]")
+                || line.startsWith("[warn]")
+                || line.startsWith("Error:");
     }
 
     /**

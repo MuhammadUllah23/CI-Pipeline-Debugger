@@ -22,6 +22,8 @@ public class PipelineRunResponse {
 
     private String headSha;
     private String branch;
+    private UUID pullRequestId;
+    private int prNumber;
 
     private Instant startedAt;
     private Instant completedAt;
@@ -42,6 +44,8 @@ public class PipelineRunResponse {
         r.conclusion = run.getConclusion();
         r.headSha = run.getHeadSha();
         r.branch = run.getBranch();
+        r.pullRequestId = run.getPullRequest() != null ? run.getPullRequest().getId() : null;
+        r.prNumber = run.getPullRequest() != null ? run.getPullRequest().getPrNumber() : 0;
         r.startedAt = run.getStartedAt();
         r.completedAt = run.getCompletedAt();
         r.totalDurationMs = run.getTotalDurationMs();
@@ -88,6 +92,14 @@ public class PipelineRunResponse {
 
     public String getBranch() {
         return branch;
+    }
+
+    public UUID getPullRequestId() {
+        return pullRequestId;
+    }
+
+    public int getPrNumber() {
+        return prNumber;
     }
 
     public Instant getStartedAt() {

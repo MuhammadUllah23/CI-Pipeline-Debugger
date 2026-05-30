@@ -7,6 +7,7 @@ import com.muhammadullah.ci_debugger.pipeline.error.dto.ErrorClusterWithOccurren
 import com.muhammadullah.ci_debugger.pipeline.error.dto.ErrorOccurrenceResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ public class ErrorClusterService {
 
     private static final Logger log = LoggerFactory.getLogger(ErrorClusterService.class);
     private static final int MAX_CLUSTER_LIMIT = 100;
+    private static final int OCCURRENCE_PAGE_SIZE = 10;
 
     private final ErrorClusterRepository clusterRepository;
     private final ErrorOccurrenceRepository occurrenceRepository;
@@ -57,7 +59,7 @@ public class ErrorClusterService {
      *                          no cluster exists for the given ID
      */
     @Transactional(readOnly = true)
-    public ErrorClusterWithOccurrencesResponse findById(UUID id) {
+    public ErrorClusterWithOccurrencesResponse findById(UUID id, int page) {
         ErrorCluster cluster = clusterRepository.findById(id)
                 .orElseThrow(() -> {
                     log.warn("Error cluster {} not found", id);
@@ -65,13 +67,11 @@ public class ErrorClusterService {
                             .addDetail("id", id);
                 });
 
-        List<ErrorOccurrenceResponse> occurrences = occurrenceRepository
-                .findByErrorClusterIdOrderByCreatedAtDesc(id)
-                .stream()
-                .map(ErrorOccurrenceResponse::from)
-                .toList();
+        Page<ErrorOccurrenceResponse> occurrences = occurrenceRepository
+                .findByErrorClusterIdOrderByCreatedAtDesc(id, PageRequest.of(page, OCCURRENCE_PAGE_SIZE))
+                .map(ErrorOccurrenceResponse::from);
 
-        log.debug("Found cluster {} with {} occurrences", id, occurrences.size());
+        log.debug("Found cluster {} with {} occurrences (page {})", id, occurrences.getTotalElements(), page);
         return ErrorClusterWithOccurrencesResponse.of(cluster, occurrences);
     }
 

@@ -27,8 +27,7 @@ public class ErrorClusterController {
      */
     @GetMapping
     public List<ErrorClusterResponse> listAll(
-            @RequestParam(defaultValue = "50") int limit
-    ) {
+            @RequestParam(defaultValue = "50") int limit) {
         return errorClusterService.listAll(limit);
     }
 
@@ -36,7 +35,9 @@ public class ErrorClusterController {
      * Returns a single cluster by ID with all its occurrences.
      */
     @GetMapping("/{id}")
-    public ErrorClusterWithOccurrencesResponse findById(@PathVariable UUID id) {
-        return errorClusterService.findById(id);
+    public ErrorClusterWithOccurrencesResponse findById(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "0") int page) {
+        return errorClusterService.findById(id, page);
     }
 }
