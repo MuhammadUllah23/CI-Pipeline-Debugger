@@ -2,7 +2,7 @@ import { useParams, Link } from 'react-router-dom'
 import { useRun, useRunSteps } from '../api/runs.js'
 import PageHeader from '../components/ui/PageHeader.jsx'
 import JobSection from '../components/run/JobSection.jsx'
-import { IconGitBranch, IconGitCommit } from '@tabler/icons-react'
+import { IconGitCommit } from '@tabler/icons-react'
 import { shortSha, timeAgo, formatDuration } from '../utils/format.js'
 
 function conclusionPill(conclusion) {
