@@ -210,7 +210,6 @@ public class GitHubLogsApiClient {
     /**
      * Returns true for lines that carry actionable error information worth
      * including in the snippet. Only {@code [ERROR]} and {@code [warn]} prefixed
-     * lines are considered meaningful — everything else is noise.
      */
     private boolean isMeaningfulLine(String line) {
         return line.startsWith("[ERROR]")
