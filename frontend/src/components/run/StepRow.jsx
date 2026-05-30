@@ -75,42 +75,56 @@ export default function StepRow({ step }) {
         </div>
       </div>
 
-      {step.errorSnippet && (
-        <div
-          style={{
-            margin: '0 1.25rem 8px',
-            background: 'var(--color-fail-bg)',
-            border: '0.5px solid var(--color-fail-bar)',
-            borderRadius: '8px',
-            padding: '8px 10px',
-          }}
-        >
-          <p
+      {step.conclusion === 'FAILURE' &&
+        (step.errorSnippet ? (
+          <div
             style={{
-              fontSize: '10px',
-              fontWeight: '500',
-              color: 'var(--color-fail-text)',
-              margin: '0 0 4px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
+              margin: '0 1.25rem 8px',
+              background: 'var(--color-fail-bg)',
+              border: '0.5px solid var(--color-fail-bar)',
+              borderRadius: '8px',
+              padding: '8px 10px',
             }}
           >
-            Error
-          </p>
-          <p
-            style={{
-              fontSize: '11px',
-              fontFamily: 'monospace',
-              color: 'var(--color-fail-text)',
-              margin: 0,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-all',
-            }}
-          >
-            {step.errorSnippet}
-          </p>
-        </div>
-      )}
+            <p
+              style={{
+                fontSize: '10px',
+                fontWeight: '500',
+                color: 'var(--color-fail-text)',
+                margin: '0 0 4px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}
+            >
+              Error
+            </p>
+            <p
+              style={{
+                fontSize: '11px',
+                fontFamily: 'monospace',
+                color: 'var(--color-fail-text)',
+                margin: 0,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-all',
+              }}
+            >
+              {step.errorSnippet}
+            </p>
+          </div>
+        ) : (
+          <div style={{ margin: '0 1.25rem 8px', padding: '6px 10px' }}>
+            <p
+              style={{
+                fontSize: '12px',
+                color: 'var(--color-text-secondary)',
+                fontStyle: 'italic',
+                margin: 0,
+              }}
+            >
+              Fetching error details...
+            </p>
+          </div>
+        ))}
     </>
   )
 }
