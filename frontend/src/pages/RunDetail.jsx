@@ -29,7 +29,7 @@ function groupByJob(steps) {
 function representativeError(message) {
   if (!message) return ''
   const lines = message.split('\n')
-  return lines.findLast(l => l.includes('error')) ?? lines[0]
+  return lines.findLast((l) => l.includes('error')) ?? lines[0]
 }
 
 export default function RunDetail() {
@@ -124,40 +124,85 @@ export default function RunDetail() {
           }}
         >
           <div>
-            <p style={{ fontSize: '11px', color: 'var(--color-text-secondary)', margin: '0 0 2px' }}>
+            <p
+              style={{ fontSize: '11px', color: 'var(--color-text-secondary)', margin: '0 0 2px' }}
+            >
               Branch
             </p>
-            <p style={{ fontSize: '13px', fontWeight: '500', color: 'var(--color-text-primary)', margin: 0 }}>
+            <p
+              style={{
+                fontSize: '13px',
+                fontWeight: '500',
+                color: 'var(--color-text-primary)',
+                margin: 0,
+              }}
+            >
               {run.branch}
             </p>
           </div>
           <div>
-            <p style={{ fontSize: '11px', color: 'var(--color-text-secondary)', margin: '0 0 2px' }}>
+            <p
+              style={{ fontSize: '11px', color: 'var(--color-text-secondary)', margin: '0 0 2px' }}
+            >
               Commit
             </p>
-            <p style={{ fontSize: '13px', fontWeight: '500', color: 'var(--color-text-primary)', margin: 0, fontFamily: 'monospace' }}>
+            <p
+              style={{
+                fontSize: '13px',
+                fontWeight: '500',
+                color: 'var(--color-text-primary)',
+                margin: 0,
+                fontFamily: 'monospace',
+              }}
+            >
               {shortSha(run.headSha)}
             </p>
           </div>
           <div>
-            <p style={{ fontSize: '11px', color: 'var(--color-text-secondary)', margin: '0 0 2px' }}>
+            <p
+              style={{ fontSize: '11px', color: 'var(--color-text-secondary)', margin: '0 0 2px' }}
+            >
               Duration
             </p>
-            <p style={{ fontSize: '13px', fontWeight: '500', color: 'var(--color-text-primary)', margin: 0 }}>
+            <p
+              style={{
+                fontSize: '13px',
+                fontWeight: '500',
+                color: 'var(--color-text-primary)',
+                margin: 0,
+              }}
+            >
               {formatDuration(run.totalDurationMs)}
             </p>
           </div>
           <div>
-            <p style={{ fontSize: '11px', color: 'var(--color-text-secondary)', margin: '0 0 2px' }}>
+            <p
+              style={{ fontSize: '11px', color: 'var(--color-text-secondary)', margin: '0 0 2px' }}
+            >
               Started
             </p>
-            <p style={{ fontSize: '13px', fontWeight: '500', color: 'var(--color-text-primary)', margin: 0 }}>
+            <p
+              style={{
+                fontSize: '13px',
+                fontWeight: '500',
+                color: 'var(--color-text-primary)',
+                margin: 0,
+              }}
+            >
               {timeAgo(run.startedAt)}
             </p>
           </div>
         </div>
 
-        <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 10px' }}>
+        <p
+          style={{
+            fontSize: '12px',
+            color: 'var(--color-text-secondary)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.06em',
+            margin: '0 0 10px',
+          }}
+        >
           Steps
         </p>
 
@@ -171,10 +216,18 @@ export default function RunDetail() {
 
         {clusters && clusters.length > 0 && (
           <>
-            <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '1.5rem 0 10px' }}>
+            <p
+              style={{
+                fontSize: '12px',
+                color: 'var(--color-text-secondary)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                margin: '1.5rem 0 10px',
+              }}
+            >
               Error Clusters
             </p>
-            {clusters.map(cluster => (
+            {clusters.map((cluster) => (
               <Link
                 key={cluster.id}
                 to={`/clusters/${cluster.id}`}
@@ -194,17 +247,53 @@ export default function RunDetail() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                    <div style={{ width: '3px', height: '32px', borderRadius: '2px', background: 'var(--color-fail-bar)', flexShrink: 0 }} />
+                    <div
+                      style={{
+                        width: '3px',
+                        height: '32px',
+                        borderRadius: '2px',
+                        background: 'var(--color-fail-bar)',
+                        flexShrink: 0,
+                      }}
+                    />
                     <div style={{ minWidth: 0 }}>
-                      <p style={{ fontSize: '13px', fontWeight: '500', color: 'var(--color-text-primary)', margin: '0 0 2px' }}>
+                      <p
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: '500',
+                          color: 'var(--color-text-primary)',
+                          margin: '0 0 2px',
+                        }}
+                      >
                         {cluster.jobName} · {cluster.stepName}
                       </p>
-                      <p style={{ fontSize: '11px', color: 'var(--color-text-secondary)', margin: 0, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p
+                        style={{
+                          fontSize: '11px',
+                          color: 'var(--color-text-secondary)',
+                          margin: 0,
+                          fontFamily: 'monospace',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
                         {representativeError(cluster.representativeMessage)}
                       </p>
                     </div>
                   </div>
-                  <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: '500', background: 'var(--color-fail-bg)', color: 'var(--color-fail-text)', flexShrink: 0, marginLeft: '12px' }}>
+                  <span
+                    style={{
+                      padding: '2px 8px',
+                      borderRadius: '20px',
+                      fontSize: '11px',
+                      fontWeight: '500',
+                      background: 'var(--color-fail-bg)',
+                      color: 'var(--color-fail-text)',
+                      flexShrink: 0,
+                      marginLeft: '12px',
+                    }}
+                  >
                     {cluster.occurrenceCount}×
                   </span>
                 </div>
