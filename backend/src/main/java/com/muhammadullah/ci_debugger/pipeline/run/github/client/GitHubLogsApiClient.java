@@ -215,7 +215,8 @@ public class GitHubLogsApiClient {
     private boolean isMeaningfulLine(String line) {
         return line.startsWith("[ERROR]")
                 || line.startsWith("[warn]")
-                || line.startsWith("Error:");
+                || line.startsWith("Error:")
+                || line.startsWith("/");
     }
 
     /**
