@@ -2,6 +2,7 @@ package com.muhammadullah.ci_debugger.pipeline.run;
 
 import com.muhammadullah.ci_debugger.exception.ErrorCode;
 import com.muhammadullah.ci_debugger.exception.ServiceException;
+import com.muhammadullah.ci_debugger.pipeline.run.dto.CommitRunSetResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunUpsertRequest;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.RepoStatusResponse;
@@ -517,4 +518,71 @@ class PipelineRunServiceTest {
         assertThat(result.get(1).getRepo()).isEqualTo("repo-b");
         assertThat(result.get(1).getOverallConclusion()).isEqualTo("FAILURE");
     }
+
+    // ── listMainBranchRunSets ──────────────────────────────────────────────
+
+    @Test
+    void listMainBranchRunSetsHappyPathReturnsMappedSets() {
+        PipelineRun run = buildRun("owner", "repo", "CI");
+        run.setHeadSha("sha1");
+        run.setStartedAt(Instant.now().minusSeconds(60));
+
+        when(repository.findDistinctMainBranchHeadShas("owner", "repo"))
+                .thenReturn(List.of("sha1"));
+        when(repository.findMainBranchRunsByHeadShaIn(eq("owner"), eq("repo"), any()))
+                .thenReturn(List.of(run));
+
+        Page<CommitRunSetResponse> result = pipelineRunService.listMainBranchRunSets("owner", "repo", 0);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getHeadSha()).isEqualTo("sha1");
+        assertThat(result.getContent().get(0).getRuns()).hasSize(1);
+        assertThat(result.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void listMainBranchRunSetsEmptyHeadShasReturnsEmptyPage() {
+        when(repository.findDistinctMainBranchHeadShas("owner", "repo"))
+                .thenReturn(List.of());
+
+        Page<CommitRunSetResponse> result = pipelineRunService.listMainBranchRunSets("owner", "repo", 0);
+
+        assertThat(result.getContent()).isEmpty();
+        verify(repository, never()).findMainBranchRunsByHeadShaIn(any(), any(), any());
+    }
+
+    @Test
+    void listMainBranchRunSetsPageOutOfBoundsReturnsEmptyPage() {
+        when(repository.findDistinctMainBranchHeadShas("owner", "repo"))
+                .thenReturn(List.of("sha1"));
+
+        Page<CommitRunSetResponse> result = pipelineRunService.listMainBranchRunSets("owner", "repo", 5);
+
+        assertThat(result.getContent()).isEmpty();
+        verify(repository, never()).findMainBranchRunsByHeadShaIn(any(), any(), any());
+    }
+
+    @Test
+    void listMainBranchRunSetsMultipleShasGroupsRunsCorrectly() {
+        PipelineRun run1 = buildRun("owner", "repo", "CI");
+        run1.setHeadSha("sha1");
+        run1.setStartedAt(Instant.now().minusSeconds(60));
+
+        PipelineRun run2 = buildRun("owner", "repo", "CI");
+        run2.setHeadSha("sha2");
+        run2.setStartedAt(Instant.now().minusSeconds(120));
+
+        when(repository.findDistinctMainBranchHeadShas("owner", "repo"))
+                .thenReturn(List.of("sha1", "sha2"));
+        when(repository.findMainBranchRunsByHeadShaIn(eq("owner"), eq("repo"), any()))
+                .thenReturn(List.of(run1, run2));
+
+        Page<CommitRunSetResponse> result = pipelineRunService.listMainBranchRunSets("owner", "repo", 0);
+
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getContent().get(0).getHeadSha()).isEqualTo("sha1");
+        assertThat(result.getContent().get(1).getHeadSha()).isEqualTo("sha2");
+        assertThat(result.getTotalElements()).isEqualTo(2);
+    }
+
 }

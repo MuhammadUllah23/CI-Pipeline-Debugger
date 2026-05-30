@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.muhammadullah.ci_debugger.pipeline.error.ErrorClusterService;
 import com.muhammadullah.ci_debugger.pipeline.error.dto.ErrorClusterResponse;
+import com.muhammadullah.ci_debugger.pipeline.run.dto.CommitRunSetResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.PipelineRunResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.RepoSummaryResponse;
 import com.muhammadullah.ci_debugger.pipeline.run.dto.RunSummaryResponse;
@@ -77,6 +78,14 @@ public class PipelineRunController {
     @GetMapping("/{id}/clusters")
     public List<ErrorClusterResponse> getClusters(@PathVariable UUID id) {
         return errorClusterService.findByRunId(id);
+    }
+
+    @GetMapping("/{owner}/{repo}/run-sets")
+    public Page<CommitRunSetResponse> listMainBranchRunSets(
+            @PathVariable String owner,
+            @PathVariable String repo,
+            @RequestParam(defaultValue = "0") int page) {
+        return pipelineRunService.listMainBranchRunSets(owner, repo, page);
     }
 
 }
