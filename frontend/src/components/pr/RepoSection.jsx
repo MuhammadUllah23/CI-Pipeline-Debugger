@@ -56,22 +56,21 @@ export default function RepoSection({ repo, prs }) {
         )}
       </div>
 
-      {expanded && (
-        <div
-          style={{
-            border: '0.5px solid var(--color-border-repo-header)',
-            borderTop: 'none',
-            borderRadius: '0 0 12px 12px',
-            overflow: 'hidden',
-          }}
-        >
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateRows: expanded ? '1fr' : '0fr',
+          transition: 'grid-template-rows 0.25s ease',
+        }}
+      >
+        <div style={{ overflow: 'hidden' }}>
           {prs.map((pr, index) => (
             <div key={pr.id} style={{ borderTop: index === 0 ? 'none' : undefined }}>
               <PrCard pr={pr} />
             </div>
           ))}
         </div>
-      )}
+      </div>
     </div>
   )
 }
