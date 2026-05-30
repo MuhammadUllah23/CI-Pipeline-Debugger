@@ -1,4 +1,4 @@
-import RunSet from './RunSet.jsx'
+import RunSet from '../pr/RunSet.jsx'
 import Pagination from '../ui/Pagination.jsx'
 
 export default function RepoRunsTab({ sets, isLoading, page, totalPages, onPrevious, onNext }) {
