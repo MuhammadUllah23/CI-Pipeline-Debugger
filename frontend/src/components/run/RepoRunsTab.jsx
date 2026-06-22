@@ -30,6 +30,5 @@ export default function RepoRunsTab({ sets, isLoading, page, totalPages, onPrevi
         onPrevious={onPrevious}
         onNext={onNext}
       />
-    </>
-  )
+    </>)
 }
